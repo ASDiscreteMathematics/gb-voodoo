@@ -133,13 +133,15 @@ EXAMPLE:
     sage: Ideal(gb).basis_is_groebner()
     True
 
-NOTE: 
+NOTE:
     For additional diagnostics there are a number of commented
     commands.  To count the number of reductions, one can uncomment
     commands to "interreduce" and comment out commands with
     "reduced_basis"; also uncomment commands with "normal_form" and
     comment out commands with "reduce".
 """
+
+from functools import cmp_to_key
 
 divides = lambda x,y: x.parent().monomial_divides(x,y)
 LCM = lambda f,g: f.parent().monomial_lcm(f,g)
@@ -152,7 +154,7 @@ def compare_by_degree(f,g):
     elif f.total_degree() < g.total_degree():
         return -1
     else:
-        return cmp(f.lm(),g.lm())
+        return -1 if f < g else ( 1 if f > g else 0 )
 
 class F5:
     """
@@ -171,12 +173,12 @@ class F5:
     def sig(self, i):
         return self.L[i][0]
 
-    def __call__(self, F):
+    def __call__(self, F, homogenize=True):
         if isinstance(F, sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal):
-            F = F.reduced_basis()
+            F = F.interreduced_basis()
         else:
-            F = Ideal(list(F)).reduced_basis()
-        if not all(f.is_homogeneous() for f in F):
+            F = Ideal(list(F)).interreduced_basis()
+        if homogenize and not all(f.is_homogeneous() for f in F):
             F = Ideal(F).homogenize()
             F = F.gens()
         return self.basis(F)
@@ -200,8 +202,8 @@ class F5:
         L = self.L
 
         m = len(F)
-        F = sorted(F, cmp=compare_by_degree)
-        
+        F = sorted(F, key=cmp_to_key(compare_by_degree))
+
         f0 = F[0]
         L[0] = (Signature(1, 0), f0*f0.lc()**(-1))
         Rules.append([])
@@ -209,7 +211,7 @@ class F5:
         Gprev = set([0])
         B = [f0]
 
-        for i in xrange(1,m):
+        for i in range(1,m):
             print(f"Increment {i}")
             f = F[i]
             L.append( (Signature(1,i), f*f.lc()**(-1)) )
@@ -220,12 +222,12 @@ class F5:
             B = [poly(l) for l in Gprev]
 
         #return B
-        return Ideal([poly(l) for l in Gprev]).reduced_basis()
+        return Ideal([poly(l) for l in Gprev]).interreduced_basis()
         #return self.interreduce(B)
 
     def incremental_basis(self, i, B, Gprev):
         """
-        adapted from Justin Gash (p.49): 
+        adapted from Justin Gash (p.49):
 
         'This is the portion of the algorithm that is called (m-1)
          times and at the end of each call a new Gröbner basis is
@@ -254,37 +256,36 @@ class F5:
             d = min(t.degree() for (t,k,u,l,v) in P)
             Pd = [(t,k,u,l,v) for (t,k,u,l,v) in P if t.degree() == d]
             print(f"Processing {len(Pd)} pairs of degree {d}")
-            #for each in Pd:
-            #    print(each)
+            if get_verbose() >= 2: [print(each) for each in Pd]
             P = P.difference(Pd)
             S = compute_spols(Pd)
             R = reduction(S, B, Gprev, Gcurr)
             for k in R:
                 P = reduce(lambda x,y: x.union(y), [critical_pair(j, k, i, Gprev) for j in Gcurr], P)
                 Gcurr.add(k)
-        #print(f"Ended with {len(Gcurr)} polynomials")
+        if get_verbose() >= 2: print(f"Ended with {len(Gcurr)} polynomials")
         return Gcurr
 
     def critical_pair(self, k, l, i, Gprev):
-        """ 
-        adapted from Justin Gash (p.51): 
-       
+        """
+        adapted from Justin Gash (p.51):
+
         'It is the subroutine critical_pair that is responsible for
          imposing the F5 Criterion from Theorem 3.3.1. Note that in
          condition (3) of Theorem 3.3.1, it is required that all pairs
          (r_i, r_j) be normalized. The reader will recall from
-         Definition 3.2.2 that a pair is normalized if: 
-         
-         (1) S(k) = m_0*F_{e_0} is not top-reducible by <f_0, ..., f_{e_0}-1> 
+         Definition 3.2.2 that a pair is normalized if:
+
+         (1) S(k) = m_0*F_{e_0} is not top-reducible by <f_0, ..., f_{e_0}-1>
 
          (2) S(l) = m_1*F_{e_1} is not top-reducible by <f_0, ..., f_{e_1}-1>
-         
+
          (3) S(m_0*k) > S(m_1*l)
 
          If these three conditions are not met in critical_pair (note
          that the third condition will always be met because
          cirtical_pair forces it to be met), the nominated critical
-         pair is dropped and () is returned. 
+         pair is dropped and () is returned.
 
          Once we have collected the nominated critical pairs that pass
          the F5 criterion test of critical_pair, we send them to
@@ -322,10 +323,10 @@ class F5:
             u0, u1 = u1, u0
             k, l = l, k
         return set([(t,k,u0,l,u1)])
-        
+
     def compute_spols(self, P):
         """
-        adapted from Justin Gash (p.51): 
+        adapted from Justin Gash (p.51):
 
         'Though at first glance this subroutine may look complicated,
          compute_spols essentially does one thing: form the new
@@ -375,7 +376,7 @@ class F5:
          completed and the reduced (still signed) version of h will be
          placed back into todo. If no top reduction is possible, h is
          made monic by K-multiplication and the resulting signed
-         polynomial is placed in completed. 
+         polynomial is placed in completed.
 
          This description of reduction seems very similar to other
          reduction routines from other algorithms. The difference lies
@@ -422,7 +423,7 @@ class F5:
          latter case, the signature of r_{k_0} is maintained, the
          polynomial portion is top-reduced and the signed polynomial
          is returned to reduction to be added back into todo; this
-         case corresponds to top-reduction in previous algorithms. 
+         case corresponds to top-reduction in previous algorithms.
 
          In the former case, however, the signature will change. This
          is marked by adding a new polynomial r_N (our notation here
@@ -434,7 +435,6 @@ class F5:
          r_N has a different signature than r_{k_0} and r_{k_0} might
          still be reducible by another signed polynomial.
         """
-        from sage.misc.misc import verbose
         find_reductor = self.find_reductor
         add_rule = self.add_rule
         poly = self.poly
@@ -442,7 +442,7 @@ class F5:
         L = self.L
 
         if poly(k) == 0:
-            verbose("Reduction of %s to zero."%str(k),level=0)
+            if get_verbose(): print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
             return set(),set()
         p = poly(k)
@@ -471,19 +471,19 @@ class F5:
 
         'For a previously added signed polynomial in G_curr to become
          a reductor of r_{k_0}, it must meet four requirements:
-        
-         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T 
-         (2) NF(u_{t_j}, G_curr) = u_{t_j} 
-         (3) not is_rewriteable(u, r_{k_j}) 
-         (4) u_{t_j} F_{k_j} = S(r_{k_0}) 
 
-         We will go through each requirement one-by-one.  
+         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T
+         (2) NF(u_{t_j}, G_curr) = u_{t_j}
+         (3) not is_rewriteable(u, r_{k_j})
+         (4) u_{t_j} F_{k_j} = S(r_{k_0})
+
+         We will go through each requirement one-by-one.
 
          Requirement (1) is simply the normal top-reduction
          requirement. The only thing of note here is that, in testing
          for the top-reducibility, u is assigned a particular value to
-         be used in subsequent tests.  
-         
+         be used in subsequent tests.
+
          Requirement (2) is making sure that the signature of the
          reductor is normalized.  Recall that we only want signatures
          of our polynomials to be normalized - we are discarding
@@ -514,7 +514,7 @@ class F5:
         """
         is_rewritable = self.is_rewritable
         is_top_reducible = self.is_top_reducible
-        
+
         poly = self.poly
         sig = self.sig
         t = poly(k).lt()
@@ -527,7 +527,7 @@ class F5:
                         and not is_top_reducible(u*mj, Gprev):
                     return set([j])
         return set()
-                
+
     def is_top_reducible(self, t, l):
         """
         Note, that this function test traditional top reduction and
@@ -551,7 +551,7 @@ class F5:
     def find_rewriting(self, u, k):
         """
         adapted from Justin Gash (p.57):
-        
+
         'find_rewriting gives us information to be used as an
          additional criterion for eliminating critical pairs. Proof of
          this fact is given in section 3.4.3. In short, we could
@@ -563,7 +563,7 @@ class F5:
         """
         Rules = self.Rules
         mk, v = self.sig(k)
-        for ctr in reversed(xrange(len(Rules[v]))):
+        for ctr in reversed(range(len(Rules[v]))):
             mj, j = Rules[v][ctr]
             if divides(mj, u * mk):
                 return j
@@ -589,16 +589,16 @@ class F5R(F5):
         L = self.L
 
         m = len(F)
-        F = sorted(F, cmp=compare_by_degree)
-        
+        F = sorted(F, key=cmp_to_key(compare_by_degree))
+
         f0 = F[0]
         L[0] = (Signature(1, 0), f0*f0.lc()**(-1))
         Rules.append(list())
-        
+
         Gprev = set([0])
         B = [f0]
 
-        for i in xrange(1, m):
+        for i in range(1, m):
             print(f"Increment {i}")
             f = F[i]
             L.append( (Signature(1,i), f*f.lc()**(-1)) )
@@ -606,9 +606,9 @@ class F5R(F5):
             if any(poly(lambd) == 1 for lambd in Gcurr):
                 return set(1)
             Gprev = Gcurr
-            B = Ideal([poly(l) for l in Gprev]).reduced_basis()
-            #B = self.interreduce([poly(l) for l in Gprev])            
-            
+            B = Ideal([poly(l) for l in Gprev]).interreduced_basis()
+            #B = self.interreduce([poly(l) for l in Gprev])
+
         return B
 
     def interreduce(self, RF):
@@ -619,13 +619,13 @@ class F5R(F5):
             RF -- a list of polynomial
         """
         F = list(RF)
-        for each in xrange(len(F)):
+        for each in range(len(F)):
            F[each] = F[each]*F[each].lc()**(-1)
         i = 0
         while i < len(F):
            reduceme = F.pop(0)
            reduced = False
-           for j in xrange(len(F)):
+           for j in range(len(F)):
               quo, rem = self.divide(reduceme,F[j])
               reduceme = rem
               if (quo != 0) and (rem != 0):
@@ -638,7 +638,7 @@ class F5R(F5):
               i = -1
            i = i + 1
         return F
-     
+
     def normal_form(self, f, B):
         """
         Compute the normal form of f w.r.t. B and count the number of
@@ -658,7 +658,7 @@ class F5R(F5):
               i = -1
            i = i + 1
         return remainder
-   
+
     def divide(self,dividend, divisor):
         """
         Divide dividend by divisor and count number of reductions.
@@ -684,7 +684,7 @@ class F5R(F5):
            else:
               i = i + 1
         return quotient, remainder
-   
+
 class F5C(F5):
     def basis(self, F):
         """
@@ -705,23 +705,23 @@ class F5C(F5):
         L = self.L
 
         m = len(F)
-        F = sorted(F, cmp=compare_by_degree)
-        
+        F = sorted(F, key=cmp_to_key(compare_by_degree))
+
         f0 = F[0]
         L[0] = (Signature(1, 0), f0*f0.lc()**(-1))
         Rules.append(list())
-        
+
         Gprev = set([0])
         B = set([f0])
 
-        for i in xrange(1, m):
+        for i in range(1, m):
             print(f"Increment {i}")
             f = F[i]
             L.append( (Signature(1,len(L)), f*f.lc()**(-1)) )
             Gcurr = incremental_basis(len(L)-1, B, Gprev)
             if any(poly(lambd) == 1 for lambd in Gcurr):
                 return set(1)
-            B = Ideal([poly(l) for l in Gcurr]).reduced_basis()
+            B = Ideal([poly(l) for l in Gcurr]).interreduced_basis()
             #B = self.interreduce([poly(l) for l in Gcurr])
             if i != m-1:
                 Gprev = self.setup_reduced_basis(B)
@@ -735,18 +735,18 @@ class F5C(F5):
             Gcurr -- index set for B
         """
         add_rule = self.add_rule
-        L = self.L 
+        L = self.L
         Rules = self.Rules
-       
+
         # we don't want to replace L but modify it
         L[:] = [(Signature(1,i), f) for i,f in enumerate(B)]
-        Rules[:] = [[] for _ in xrange(len(B))]
+        Rules[:] = [[] for _ in range(len(B))]
         Gcurr = set()
 
         for i,f in enumerate(B):
             Gcurr.add( i )
             t = B[i].lt()
-            for j in xrange(i+1, len(B)):
+            for j in range(i+1, len(B)):
                 fjlt = B[j].lt()
                 u = LCM(t, fjlt)//fjlt
                 add_rule( Signature(u, j), -1 )
@@ -791,7 +791,7 @@ class F4F5(F5C):
                 if p != 0:
                     Ret.append(len(L)-1)
         return Ret
-        
+
     def symbolic_preprocessing(self,S, Gprev, Gcurr):
         """
         Add polynomials to the set S such that all possible reductors
@@ -814,12 +814,12 @@ class F4F5(F5C):
         Done = set()
 
         # the set of all monomials
-        M = set([m  for f in F for m in f[1].monomials()])
+        M = set([m for f in F for m in f[1].monomials()])
         while M != Done:
             m = M.difference(Done).pop()
             Done.add(m)
             t, g = find_reductor(m, Gprev, Gcurr)
-            if t!=0: 
+            if t!=0:
                 F.append( (t*g[0], t*g[1], -1) )
                 M = M.union((t*g[1]).monomials())
         return sorted(F, key=lambda f: f[0]) # sort by signature
@@ -827,7 +827,7 @@ class F4F5(F5C):
     def find_reductor(self, m, Gprev, Gcurr):
         r"""
         Find a reductor $g_i$ for $m$ in $G_{prev}$ and $G_{curr}$ subject
-        to the following contraint.  is a 
+        to the following contraint.  is a
          * the leading monomial of $g_i$ divides $m$
          * $g_i \in G_{prev}$ is preferred over $g_i \in G_{curr}$
          * if $g_i \in G_{curr}$ then
@@ -838,12 +838,12 @@ class F4F5(F5C):
             m -- a monomial
             Gprev -- the previous Gröbner basis indexed in L
             Ccurr -- the Gröbner basis computed so far indexed in L
-        
+
         """
         is_rewritable = self.is_rewritable
         is_top_reducible = self.is_top_reducible
         sig = self.sig
-        poly = self.poly 
+        poly = self.poly
 
         L = self.L
         R = m.parent()
@@ -860,7 +860,7 @@ class F4F5(F5C):
                     continue
                 return t, L[k]
         return 0, -1
-        
+
 
     def gauss_elimination(self, F1):
         """
@@ -872,26 +872,26 @@ class F4F5(F5C):
         F = [f[1] for f in F1]
         if len(F) == 0:
             return F
-        A,v = mq.MPolynomialSystem(F).coefficient_matrix()
+        A,v = Sequence(F).coefficient_matrix()
         self.zero_reductions += A.nrows()-A.rank()
         print(f"{A.nrows():>4} x {A.ncols():>4}, {A.rank():>4}, {A.nrows()-A.rank():>4}")
         nrows, ncols = A.nrows(), A.ncols()
-        for c in xrange(ncols):
-            for r in xrange(0,nrows):
+        for c in range(ncols):
+            for r in range(0,nrows):
                 if A[r,c] != 0:
-                    if any(A[r,i] for i in xrange(c)):
+                    if any(A[r,i] for i in range(c)):
                         continue
                     a_inverse = ~A[r,c]
                     A.rescale_row(r, a_inverse, c)
-                    for i in xrange(r+1,nrows):
+                    for i in range(r+1,nrows):
                         if A[i,c] != 0:
-                            if any(A[i,_] for _ in xrange(c)):
+                            if any(A[i,_] for _ in range(c)):
                                 continue
                             minus_b = -A[i,c]
                             A.add_multiple_of_row(i, r, minus_b, c)
                     break
         F = (A*v).list()
-        return [(F1[i][0],F[i],F1[i][2]) for i in xrange(len(F))]
+        return [(F1[i][0],F[i],F1[i][2]) for i in range(len(F))]
 
 class F5SansRewriting(F5):
     """
@@ -907,25 +907,25 @@ class F5SansRewriting(F5):
      not an official part of the F5 criteria per se.'
     """
     def critical_pair(self, k, l, i, Gprev):
-        """ 
-        adapted from Justin Gash (p.51): 
-       
+        """
+        adapted from Justin Gash (p.51):
+
         'It is the subroutine critical_pair that is responsible for
          imposing the F5 Criterion from Theorem 3.3.1. Note that in
          condition (3) of Theorem 3.3.1, it is required that all pairs
          (r_i, r_j) be normalized. The reader will recall from
-         Definition 3.2.2 that a pair is normalized if: 
-         
-         (1) S(k) = m_0*F_{e_0} is not top-reducible by <f_0, ..., f_{e_0}-1> 
+         Definition 3.2.2 that a pair is normalized if:
+
+         (1) S(k) = m_0*F_{e_0} is not top-reducible by <f_0, ..., f_{e_0}-1>
 
          (2) S(l) = m_1*F_{e_1} is not top-reducible by <f_0, ..., f_{e_1}-1>
-         
+
          (3) S(m_0*k) > S(m_1*l)
 
          If these three conditions are not met in critical_pair (note
          that the third condition will always be met because
          cirtical_pair forces it to be met), the nominated critical
-         pair is dropped and () is returned. 
+         pair is dropped and () is returned.
 
          Once we have collected the nominated critical pairs that pass
          the F5 criterion test of critical_pair, we send them to
@@ -956,10 +956,10 @@ class F5SansRewriting(F5):
             u0, u1 = u1, u0
             k, l = l, k
         return set([(t,k,u0,l,u1)])
-        
+
     def compute_spols(self, P):
         """
-        adapted from Justin Gash (p.51): 
+        adapted from Justin Gash (p.51):
 
         'Though at first glance this subroutine may look complicated,
          compute_spols essentially does one thing: form the new
@@ -1002,7 +1002,7 @@ class F5SansRewriting(F5):
          latter case, the signature of r_{k_0} is maintained, the
          polynomial portion is top-reduced and the signed polynomial
          is returned to reduction to be added back into todo; this
-         case corresponds to top-reduction in previous algorithms. 
+         case corresponds to top-reduction in previous algorithms.
 
          In the former case, however, the signature will change. This
          is marked by adding a new polynomial r_N (our notation here
@@ -1014,14 +1014,13 @@ class F5SansRewriting(F5):
          r_N has a different signature than r_{k_0} and r_{k_0} might
          still be reducible by another signed polynomial.
         """
-        from sage.misc.misc import verbose
         find_reductor = self.find_reductor
         poly = self.poly
         sig = self.sig
         L = self.L
 
         if poly(k) == 0:
-            verbose("Reduction of %s to zero."%str(k),level=0)
+            if get_verbose() >=0 : print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
             return set(),set()
         p = poly(k)
@@ -1048,19 +1047,19 @@ class F5SansRewriting(F5):
 
         'For a previously added signed polynomial in G_curr to become
          a reductor of r_{k_0}, it must meet four requirements:
-        
-         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T 
-         (2) NF(u_{t_j}, G_curr) = u_{t_j} 
-         ...
-         (4) u_{t_j} F_{k_j} = S(r_{k_0}) 
 
-         We will go through each requirement one-by-one.  
+         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T
+         (2) NF(u_{t_j}, G_curr) = u_{t_j}
+         ...
+         (4) u_{t_j} F_{k_j} = S(r_{k_0})
+
+         We will go through each requirement one-by-one.
 
          Requirement (1) is simply the normal top-reduction
          requirement. The only thing of note here is that, in testing
          for the top-reducibility, u is assigned a particular value to
-         be used in subsequent tests.  
-         
+         be used in subsequent tests.
+
          Requirement (2) is making sure that the signature of the
          reductor is normalized.  Recall that we only want signatures
          of our polynomials to be normalized - we are discarding
@@ -1089,7 +1088,7 @@ class F5SansRewriting(F5):
          can loosen this requirement.)
         """
         is_top_reducible = self.is_top_reducible
-        
+
         poly = self.poly
         sig = self.sig
         t = poly(k).lt()
@@ -1102,7 +1101,7 @@ class F5SansRewriting(F5):
                     return set([j])
         return set()
 
-from UserList import UserList
+from collections import UserList
 
 class Signature(UserList):
     def __init__(self, multiplier, index):
@@ -1110,28 +1109,22 @@ class Signature(UserList):
         Create a new signature from the mulitplier and the index.
         """
         UserList.__init__(self, (multiplier, index))
-         
+
     def __lt__(self, other):
-        """
-        """
-        if self[1] < other[1]:
-            return True
-        elif self[1] > other[1]:
-            return False
-        else:
-            return (self[0] < other[0])
+        if self[1] != other[1]:
+            return self[1] < other[1]
+        return self[0] < other[0]
 
     def __eq__(self, other):
         return self[0] == other[0] and self[1] == other[1]
-    
+
     def __neq__(self, other):
         return self[0] != other[0] or self[1] != other[1]
-  
+
     def __rmul__(self, other):
         if isinstance(self, Signature):
             return Signature(other * self[0], self[1])
-        else:
-            raise TypeError
+        raise TypeError
 
     def __hash__(self):
         return hash(self[0]) + hash(self[1])
