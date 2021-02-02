@@ -156,16 +156,26 @@ def compare_by_degree(f,g):
     else:
         return -1 if f < g else ( 1 if f > g else 0 )
 
+def unit_vec(ring, i, length):
+    assert i < length
+    vec = zero_vector(ring, length)
+    vec[i] = 1
+    return vec
+
 class F5:
     """
     Jean-Charles Faugère's F5 Algorithm.
     """
     def __init__(self, F=None):
-        if F is not None:
+        if F:
+            self.F = F
             self.Rules = [[]]
             self.L = [0]
             self.zero_reductions = 0
             self.reductions = 0
+
+    def voo(self, i):
+        return self.L[i][2]
 
     def poly(self, i):
         return self.L[i][1]
@@ -175,9 +185,7 @@ class F5:
 
     def __call__(self, F, homogenize=True):
         if isinstance(F, sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal):
-            F = F.interreduced_basis()
-        else:
-            F = Ideal(list(F)).interreduced_basis()
+            F = F.gens()
         if homogenize and not all(f.is_homogeneous() for f in F):
             F = Ideal(F).homogenize()
             F = F.gens()
@@ -193,6 +201,8 @@ class F5:
         OUTPUT:
             G -- a list of polynomials; a Gröbner basis for <F>
         """
+        sig = self.sig
+        voo = self.voo
         poly = self.poly
         incremental_basis = self.incremental_basis
 
@@ -202,30 +212,30 @@ class F5:
         L = self.L
 
         m = len(F)
-        F = sorted(F, key=cmp_to_key(compare_by_degree))
 
-        f0 = F[0]
-        L[0] = (Signature(1, 0), f0*f0.lc()**(-1))
+        f = F[0]
+        L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
+        if voo(0) * vector(R, F) != poly(0): print(f" [!] Something wrong:\n{voo(0)}\n{poly(0)}.")
         Rules.append([])
 
         Gprev = set([0])
-        B = [f0]
+        B = [poly(0)]
+        B_voo = [voo(0)]
 
         for i in range(1,m):
-            print(f"Increment {i}")
+            if get_verbose() >= 0: print(f"Increment {i}")
             f = F[i]
-            L.append( (Signature(1,i), f*f.lc()**(-1)) )
-            Gcurr = incremental_basis(i, B, Gprev)
-            if any(poly(lambd) == 1 for lambd in Gcurr):
-                return set(1)
+            L.append( (Signature(1,i), f/f.lc(), unit_vec(R, i, m)/f.lc()) )
+            Gcurr = incremental_basis(i, B, B_voo, Gprev)
+            for j in range(len(Gcurr)):
+                if poly(j) == 1:
+                    return [poly(j)], [voo(j)]
             Gprev = Gcurr
             B = [poly(l) for l in Gprev]
+            B_voo = [voo(l) for l in Gprev]
+        return [poly(l) for l in Gprev], [voo(l) for l in Gprev]
 
-        #return B
-        return Ideal([poly(l) for l in Gprev]).interreduced_basis()
-        #return self.interreduce(B)
-
-    def incremental_basis(self, i, B, Gprev):
+    def incremental_basis(self, i, B, B_voo, Gprev):
         """
         adapted from Justin Gash (p.49):
 
@@ -252,14 +262,14 @@ class F5:
         Rules.append( list() )
 
         P = reduce(lambda x,y: x.union(y), [critical_pair(curr_idx, j, i, Gprev) for j in Gprev], set())
-        while len(P) != 0:
+        while P:
             d = min(t.degree() for (t,k,u,l,v) in P)
             Pd = [(t,k,u,l,v) for (t,k,u,l,v) in P if t.degree() == d]
-            print(f"Processing {len(Pd)} pairs of degree {d}")
+            if get_verbose() >= 0: print(f"Processing {len(Pd)} pair{'' if len(Pd)==1 else 's'} of degree {d}")
             if get_verbose() >= 2: [print(each) for each in Pd]
             P = P.difference(Pd)
             S = compute_spols(Pd)
-            R = reduction(S, B, Gprev, Gcurr)
+            R = reduction(S, B, B_voo, Gprev, Gcurr)
             for k in R:
                 P = reduce(lambda x,y: x.union(y), [critical_pair(j, k, i, Gprev) for j in Gcurr], P)
                 Gcurr.add(k)
@@ -336,9 +346,9 @@ class F5:
          polynomials will always be of the form u_L*S(r_{i_L}) in
          compute_spols.'
         """
+        voo = self.voo
         poly = self.poly
         sig = self.sig
-        spol = self.spol
         is_rewritable = self.is_rewritable
         add_rule = self.add_rule
 
@@ -348,18 +358,18 @@ class F5:
         P = sorted(P, key=lambda x: x[0])
         for (t,k,u,l,v) in P:
             if not is_rewritable(u,k) and not is_rewritable(v,l):
-                s = spol(poly(k), poly(l))
-                L.append( (u * sig(k), s.lc()**-1 * s) )
+                s = u*poly(k)-v*poly(l) # S-Polynomial
+                s_voo = u*voo(k)-v*voo(l)
+                s_voo /= s.lc() # normalize
+                s /= s.lc()
+                L.append( (u * sig(k), s, s_voo) )
                 add_rule(u * sig(k), len(L)-1)
                 if s != 0:
                     S.append(len(L)-1)
         S = sorted(S, key=lambda x: sig(x))
         return S
 
-    def spol(self, f, g):
-        return LCM(LM(f),LM(g)) // LT(f) * f - LCM(LM(f),LM(g)) // LT(g) * g
-
-    def reduction(self, S, B, Gprev, Gcurr):
+    def reduction(self, S, B, B_voo, Gprev, Gcurr):
         """
         adapted from Justin Gash (p.54ff):
 
@@ -383,28 +393,56 @@ class F5:
          in the phrase, "If top_reduction determines that the signed
          polynomial can be reduced ..."'
         """
+        F = self.F
         L = self.L
         sig = self.sig
+        voo = self.voo
         poly = self.poly
         top_reduction = self.top_reduction
+        voo_reduce = self.voo_reduce
 
         to_do = S
         completed = set()
-        while len(to_do):
-            #print(f"Processing {k} {L[k]}")
+        while to_do:
             k, to_do = to_do[0], to_do[1:]
+            if get_verbose() >= 2: print(f"Processing {k} – {sig(k)}, {poly(k)}")
             h = poly(k).reduce(B)
-            #h = self.normal_form(poly(k),B)
-            L[k] = (sig(k), h)
+            pol, voo_h = voo_reduce(k, B, B_voo)
+            assert h == pol, f"\nBuggy behavior in 'voo_reduce':\n    {h}\n        !=\n    {pol}"
+            if get_verbose() >= 1 and pol != poly(k): print(f"Reduced {poly(k)} to {pol}")
+            L[k] = (sig(k), pol, voo_h)
+            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
             completed = completed.union( newly_completed )
-            #if k in newly_completed:
-            #  print(f"completed {k} lm {poly(k).lt()}")
-            for j in redo:
-                # insert j in to_do, sorted by increasing signature
-                to_do.append(j)
-                to_do.sort(key=lambda x: sig(x))
+            if get_verbose() >= 2 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
+            to_do += redo
+            to_do.sort(key=lambda x: sig(x))
         return completed
+
+    def voo_reduce(self, i, base, base_voo):
+        """
+        Perform complete reduction of polynomial with index i by base,
+        and keep track of how that alters it's vector of origin.
+        Returns the fully reduced polynomial and corresponding VoO.
+        """
+        pol = self.poly(i)
+        voo = self.voo(i)
+        reduced = True
+        while reduced:
+            reduced = False
+            for b, b_voo in zip(base, base_voo):
+                quo, rem = pol.quo_rem(b.lt())
+                if quo:
+                    pol = pol - quo*b # pol == rem
+                    voo = voo - quo*b_voo
+                    reduced = True
+                # assert rem == pol - quo*b
+                # if b.lt().divides(pol.lt()):
+                #     div = pol.lt()//b.lt()
+                #     pol -= div*b
+                #     voo -= div*b_voo
+                #     reduced = True
+        return pol, voo
 
     def top_reduction(self, k, Gprev, Gcurr):
         """
@@ -437,31 +475,41 @@ class F5:
         """
         find_reductor = self.find_reductor
         add_rule = self.add_rule
+        voo = self.voo
         poly = self.poly
         sig = self.sig
         L = self.L
+        F = self.F
+        R = F[0].parent()
 
         if poly(k) == 0:
-            if get_verbose(): print(f"Reduction of {k} to zero.")
+            if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
             return set(),set()
         p = poly(k)
+        p_voo = voo(k)
         J = find_reductor(k, Gprev, Gcurr)
         if J == set():
-            L[k] = ( sig(k), p * p.lc()**(-1) )
+            L[k] = ( sig(k), p/p.lc(), p_voo/p.lc() )
+            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             return set([k]),set()
         j = J.pop()
         q = poly(j)
+        q_voo = voo(j)
         u = p.lt()//q.lt()
         p = p - u*q
+        p_voo = p_voo - u*q_voo
         self.reductions += 1
         if p != 0:
-            p = p * p.lc()**(-1)
+            p_voo /= p.lc()
+            p /= p.lc()
         if u * sig(j) < sig(k):
-            L[k] = (sig(k), p)
+            L[k] = (sig(k), p, p_voo)
+            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             return set(), set([k])
         else:
-            L.append((u * sig(j), p))
+            L.append( (u * sig(j), p, p_voo) )
+            if voo(-1) * vector(R, F) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
             add_rule(u * sig(j), len(L)-1)
             return set(), set([k, len(L)-1])
 
@@ -1132,4 +1180,4 @@ class Signature(UserList):
 f5  = F5()
 f5r = F5R()
 f5c = F5C()
-ff = F4F5()
+ff  = F4F5()
