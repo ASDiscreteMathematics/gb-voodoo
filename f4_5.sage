@@ -372,8 +372,9 @@ class F5:
             if not is_rewritable(u,k) and not is_rewritable(v,l):
                 s = u*poly(k)-v*poly(l) # S-Polynomial
                 s_voo = u*voo(k)-v*voo(l)
-                s_voo /= s.lc() # normalize
-                s /= s.lc()
+                if s != 0:
+                    s_voo /= s.lc() # normalize
+                    s /= s.lc()
                 L.append( (u * sig(k), s, s_voo) )
                 add_rule(u * sig(k), len(L)-1)
                 if s != 0:
