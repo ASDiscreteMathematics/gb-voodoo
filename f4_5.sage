@@ -169,6 +169,7 @@ class F5:
     def __init__(self, F=None):
         if F:
             self.F = F
+            self.R = F[0].parent()
             self.Rules = [[]]
             self.L = [0]
             self.zero_reductions = 0
@@ -209,6 +210,7 @@ class F5:
         self.__init__(F)
 
         Rules = self.Rules
+        R = self.R
         L = self.L
 
         m = len(F)
@@ -480,7 +482,7 @@ class F5:
         sig = self.sig
         L = self.L
         F = self.F
-        R = F[0].parent()
+        R = self.R
 
         if poly(k) == 0:
             if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
@@ -582,7 +584,7 @@ class F5:
         not top_reduction as implemented in the function with the same
         name of this class.
         """
-        R = t.parent()
+        R = self.R
         poly = self.poly
         for g in l:
             if R.monomial_divides(poly(g).lm(),t):
