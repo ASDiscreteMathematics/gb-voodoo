@@ -172,6 +172,7 @@ class F5:
             self.R = F[0].parent()
             self.Rules = [[]]
             self.L = [0]
+            self.syzygies = []
             self.zero_reductions = 0
             self.reductions = 0
 
@@ -352,6 +353,7 @@ class F5:
         poly = self.poly
         sig = self.sig
         is_rewritable = self.is_rewritable
+        syzygies = self.syzygies
         add_rule = self.add_rule
 
         L = self.L
@@ -367,7 +369,9 @@ class F5:
                 L.append( (u * sig(k), s, s_voo) )
                 add_rule(u * sig(k), len(L)-1)
                 if s != 0:
-                    S.append(len(L)-1)
+                    S += [len(L)-1]
+                else:
+                    syzygies += [len(L)-1]
         S = sorted(S, key=lambda x: sig(x))
         return S
 
@@ -476,6 +480,7 @@ class F5:
          still be reducible by another signed polynomial.
         """
         find_reductor = self.find_reductor
+        syzygies = self.syzygies
         add_rule = self.add_rule
         voo = self.voo
         poly = self.poly
@@ -487,7 +492,8 @@ class F5:
         if poly(k) == 0:
             if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
-            return set(),set()
+            self.syzygies += [k]
+            return set(), set()
         p = poly(k)
         p_voo = voo(k)
         J = find_reductor(k, Gprev, Gcurr)
@@ -505,6 +511,7 @@ class F5:
         if p != 0:
             p_voo /= p.lc()
             p /= p.lc()
+        # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
             if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
