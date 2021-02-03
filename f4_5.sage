@@ -176,6 +176,14 @@ class F5:
             self.zero_reductions = 0
             self.reductions = 0
 
+    def phi(self, i):
+        """
+        Maps vector of origin at index 'i' to its polynomial under
+        the input system. Always results in the polynomial at 'i'.
+        Retuns the polynomial, allowing to check consistency of voos.
+        """
+        return self.voo(i) * vector(self.R, self.F)
+
     def voo(self, i):
         return self.L[i][2]
 
@@ -203,6 +211,7 @@ class F5:
         OUTPUT:
             G -- a list of polynomials; a Gröbner basis for <F>
         """
+        phi = self.phi
         sig = self.sig
         voo = self.voo
         poly = self.poly
@@ -211,14 +220,13 @@ class F5:
         self.__init__(F)
 
         Rules = self.Rules
-        R = self.R
         L = self.L
 
         m = len(F)
 
         f = F[0]
         L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
-        if voo(0) * vector(R, F) != poly(0): print(f" [!] Something wrong:\n{voo(0)}\n{poly(0)}.")
+        if phi(0) != poly(0): print(f" [!] Something wrong:\n{voo(0)}\n{poly(0)}.")
         Rules.append([])
 
         Gprev = set([0])
@@ -401,6 +409,7 @@ class F5:
         """
         F = self.F
         L = self.L
+        phi = self.phi
         sig = self.sig
         voo = self.voo
         poly = self.poly
@@ -417,7 +426,7 @@ class F5:
             assert h == pol, f"\nBuggy behavior in 'voo_reduce':\n    {h}\n        !=\n    {pol}"
             if get_verbose() >= 1 and pol != poly(k): print(f"Reduced {poly(k)} to {pol}")
             L[k] = (sig(k), pol, voo_h)
-            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
             completed = completed.union( newly_completed )
             if get_verbose() >= 2 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
@@ -482,12 +491,12 @@ class F5:
         find_reductor = self.find_reductor
         syzygies = self.syzygies
         add_rule = self.add_rule
+        phi = self.phi
         voo = self.voo
         poly = self.poly
         sig = self.sig
         L = self.L
         F = self.F
-        R = self.R
 
         if poly(k) == 0:
             if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
@@ -497,9 +506,9 @@ class F5:
         p = poly(k)
         p_voo = voo(k)
         J = find_reductor(k, Gprev, Gcurr)
-        if J == set():
+        if not J:
             L[k] = ( sig(k), p/p.lc(), p_voo/p.lc() )
-            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             return set([k]),set()
         j = J.pop()
         q = poly(j)
@@ -514,11 +523,11 @@ class F5:
         # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
-            if voo(k) * vector(R, F) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             return set(), set([k])
         else:
             L.append( (u * sig(j), p, p_voo) )
-            if voo(-1) * vector(R, F) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
+            if phi(-1) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
             add_rule(u * sig(j), len(L)-1)
             return set(), set([k, len(L)-1])
 
