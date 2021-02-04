@@ -975,28 +975,8 @@ class F5SansRewriting(F5):
     """
     def critical_pair(self, k, l, i, Gprev):
         """
-        adapted from Justin Gash (p.51):
-
-        'It is the subroutine critical_pair that is responsible for
-         imposing the F5 Criterion from Theorem 3.3.1. Note that in
-         condition (3) of Theorem 3.3.1, it is required that all pairs
-         (r_i, r_j) be normalized. The reader will recall from
-         Definition 3.2.2 that a pair is normalized if:
-
-         (1) S(k) = m_0*F_{e_0} is not top-reducible by <f_0, ..., f_{e_0}-1>
-
-         (2) S(l) = m_1*F_{e_1} is not top-reducible by <f_0, ..., f_{e_1}-1>
-
-         (3) S(m_0*k) > S(m_1*l)
-
-         If these three conditions are not met in critical_pair (note
-         that the third condition will always be met because
-         cirtical_pair forces it to be met), the nominated critical
-         pair is dropped and () is returned.
-
-         Once we have collected the nominated critical pairs that pass
-         the F5 criterion test of critical_pair, we send them to
-         compute_spols.'
+        Like the function of base class F5, without the
+        rewriteability checks.
         """
         poly = self.poly
         sig = self.sig
@@ -1026,133 +1006,81 @@ class F5SansRewriting(F5):
 
     def compute_spols(self, P):
         """
-        adapted from Justin Gash (p.51):
-
-        'Though at first glance this subroutine may look complicated,
-         compute_spols essentially does one thing: form the new
-         S-polynomials output from critical_pairs as admissible signed
-         polynomials. We note that, because critical_pairs ensured
-         that S(u*k) < S(v*l), we know that the signature of all new
-         polynomials will always be of the form u_L*S(r_{i_L}) in
-         compute_spols.'
+        Like the function of base class F5, without the
+        rewriteability checks.
         """
-        poly = self.poly
+        syzygies = self.syzygies
         sig = self.sig
-        spol = self.spol
-
+        poly = self.poly
+        voo = self.voo
         L = self.L
 
         S = list()
         P = sorted(P, key=lambda x: x[0])
         for (t,k,u,l,v) in P:
-            s = spol(poly(k), poly(l))
+            s = u*poly(k)-v*poly(l) # S-Polynomial
+            s_voo = u*voo(k)-v*voo(l) # S-Polynomial
             if s != 0:
-                L.append( (u * sig(k), s) )
-                S.append(len(L)-1)
+                s_voo /= s.lc()
+                s /= s.lc() # normalize
+            L.append( (u * sig(k), s, s_voo) )
+            if s != 0:
+                S += [len(L)-1]
+            else:
+                syzygies += [len(L)-1]
         S = sorted(S, key=lambda x: sig(x))
         return S
 
     def top_reduction(self, k, Gprev, Gcurr):
         """
-        adapted from Justin Gash (p.55ff):
-
-        'We will go through top_reduction step-by-step. If the signed
-         polynomial being examined has polynomial part 0, then there
-         is no data left in that particular signed polynomial - an
-         empty ordered pair is returned. Otherwise top_reduction calls
-         upon another sub-subroutine find_reductor. Essentially, if
-         find_reductor comes back negative, the current signed
-         polynomial is made monic and returned to reduction to be
-         placed in completed. If a top-reduction is deemed possible,
-         then there are two possible cases: either the reduction will
-         increase the signature of polynomial or it won't. In the
-         latter case, the signature of r_{k_0} is maintained, the
-         polynomial portion is top-reduced and the signed polynomial
-         is returned to reduction to be added back into todo; this
-         case corresponds to top-reduction in previous algorithms.
-
-         In the former case, however, the signature will change. This
-         is marked by adding a new polynomial r_N (our notation here
-         describes N after N was incremented) with appropriate
-         signature based upon the reductor, not S(r_{k_0}). A new rule
-         is added (as I mentioned previously, this will be explained
-         later) and then both r_{k_0} and r_N are sent back to
-         reduction to be added back into todo. This is done because
-         r_N has a different signature than r_{k_0} and r_{k_0} might
-         still be reducible by another signed polynomial.
+        Like the function of base class F5, without the
+        adding of rules.
         """
         find_reductor = self.find_reductor
-        poly = self.poly
+        syzygies = self.syzygies
         sig = self.sig
+        poly = self.poly
+        voo = self.voo
+        phi = self.phi
         L = self.L
 
         if poly(k) == 0:
-            if get_verbose() >=0 : print(f"Reduction of {k} to zero.")
+            if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
-            return set(),set()
+            self.syzygies += [k]
+            return set(), set()
         p = poly(k)
+        p_voo = voo(k)
         J = find_reductor(k, Gprev, Gcurr)
-        if J == set():
-            L[k] = ( sig(k), p * p.lc()**(-1) )
-            return set([k]),set()
+        if not J:
+            L[k] = ( sig(k), p/p.lc() , p_voo/p.lc() )
+            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            return set([k]), set()
         j = J.pop()
         q = poly(j)
+        q_voo = voo(j)
         u = p.lt()//q.lt()
+        print(f"\n{k}, {j}")
         p = p - u*q
+        p_voo = p_voo - u*q_voo
+        self.reductions += 1
         if p != 0:
-            p = p * p.lc()**(-1)
+            p_voo /= p.lc()
+            p /= p.lc()
+        # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
-            L[k] = (sig(k), p)
+            L[k] = (sig(k), p, p_voo)
+            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
             return set(), set([k])
         else:
-            L.append((u * sig(j), p))
+            L.append((u * sig(j), p, p_voo))
+            if phi(-1) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
             return set(), set([k, len(L)-1])
 
     def find_reductor(self, k, Gprev, Gcurr):
         """
-        adapted from Justin Gash (p.56ff):
-
-        'For a previously added signed polynomial in G_curr to become
-         a reductor of r_{k_0}, it must meet four requirements:
-
-         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T
-         (2) NF(u_{t_j}, G_curr) = u_{t_j}
-         ...
-         (4) u_{t_j} F_{k_j} = S(r_{k_0})
-
-         We will go through each requirement one-by-one.
-
-         Requirement (1) is simply the normal top-reduction
-         requirement. The only thing of note here is that, in testing
-         for the top-reducibility, u is assigned a particular value to
-         be used in subsequent tests.
-
-         Requirement (2) is making sure that the signature of the
-         reductor is normalized.  Recall that we only want signatures
-         of our polynomials to be normalized - we are discarding
-         non-normalized S-polynomials. If we ignored this condition
-         and our re- ductor wound up having larger signature than
-         S(r_{k_0}), then top_reduction would create a new signed
-         polynomial with our reductor's non-normalized signature. (We
-         might add that, if the reductor had smaller signature than
-         S(r_{k_0}), it would be fine to reduce by it; however, F5
-         doesn't miss anything by forgoing this opportunity because,
-         by Lemma 3.2.1 (The Normalization Lemma), there will be
-         another normalized reductor with the same head term and
-         smaller signature.)
-
-         ...
-
-         Requirement (4) is a check that makes sure we don't reduce by
-         something that has the same signature as r_{k_0} . Recall
-         that we want all signed polynomials used during the run of F5
-         to be admissible. If we reduced by a polynomial that has the
-         same signature, we would be left with a new polynomial for
-         which we would have no idea what the signature is. The act of
-         reduction would have certainly lowered the signature, thus
-         causing admissibility to be lost. (We will comment on this
-         requirement later in subsection 3.5. With a little care, we
-         can loosen this requirement.)
+        Like the function of base class F5, without the
+        rewriteability check.
         """
         is_top_reducible = self.is_top_reducible
 
