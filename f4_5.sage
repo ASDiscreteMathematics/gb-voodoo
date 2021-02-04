@@ -20,9 +20,10 @@ AUTHOR:
     -- 20090112 Martin Albrecht (F5SansRewriting)
     -- 20090124 Martin Albrecht and John Perry (F4F5)
     -- 20090126 John Perry (correction to compute_spols)
+    -- 20210201 Jan Ferdinand Sauer (keep vectors of origin and syzygies)
 
 EXAMPLE:
-    sage: execfile('f5.py')
+    sage: load('f4_5.py')
     sage: R.<x,y,z> = PolynomialRing(GF(29))
     sage: I =  R* [3*x^4*y + 18*x*y^4 + 4*x^3*y*z + 20*x*y^3*z + 3*x^2*z^3, \
                    3*x^3*y^2 + 7*x^2*y^3 + 24*y^2*z^3, \
