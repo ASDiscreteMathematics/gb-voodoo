@@ -146,8 +146,6 @@ from functools import cmp_to_key
 
 divides = lambda x,y: x.parent().monomial_divides(x,y)
 LCM = lambda f,g: f.parent().monomial_lcm(f,g)
-LM = lambda f: f.lm()
-LT = lambda f: f.lt()
 
 def compare_by_degree(f,g):
     if f.total_degree() > g.total_degree():
@@ -220,6 +218,7 @@ class F5:
         poly = self.poly
         incremental_basis = self.incremental_basis
 
+        if not F: return [], []
         self.__init__(F)
 
         Rules = self.Rules
@@ -245,9 +244,9 @@ class F5:
                 if poly(j) == 1:
                     return [poly(j)], [voo(j)]
             Gprev = Gcurr
-            B = [poly(l) for l in Gprev]
-            B_voo = [voo(l) for l in Gprev]
-        return [poly(l) for l in Gprev], [voo(l) for l in Gprev]
+            B = [poly(l) for l in Gcurr]
+            B_voo = [voo(l) for l in Gcurr]
+        return B, B_voo
 
     def incremental_basis(self, i, B, B_voo, Gprev):
         """
@@ -273,7 +272,7 @@ class F5:
 
         curr_idx = len(L) - 1
         Gcurr = Gprev.union([curr_idx])
-        Rules.append( list() )
+        Rules.append( [] )
 
         P = reduce(lambda x,y: x.union(y), [critical_pair(curr_idx, j, i, Gprev) for j in Gprev], set())
         while P:
@@ -340,7 +339,7 @@ class F5:
         if e1 == i and is_top_reducible(u1*m1, Gprev):
             return set()
         # This check was introduced by Stegers, it isn't strictly
-        # necessary
+        # necessary, see class F5SansRewriting below
         if is_rewritable(u0, k) or is_rewritable(u1, l):
             return set()
         if u0 * sig(k) < u1 * sig(l):
@@ -383,6 +382,7 @@ class F5:
                 if s != 0:
                     S += [len(L)-1]
                 else:
+                    if get_verbose() >= -1: print(f"S-Polynomial reduced to zero! {k} and {l}")
                     syzygies += [len(L)-1]
         S = sorted(S, key=lambda x: sig(x))
         return S
@@ -438,9 +438,9 @@ class F5:
             to_do.sort(key=lambda x: sig(x))
         return completed
 
-    def voo_reduce(self, i, base, base_voo):
+    def voo_reduce(self, i, basis, basis_voo):
         """
-        Perform complete reduction of polynomial with index i by base,
+        Perform complete reduction of polynomial with index i by basis,
         and keep track of how that alters it's vector of origin.
         Returns the fully reduced polynomial and corresponding VoO.
         """
@@ -450,10 +450,10 @@ class F5:
         reduced = True
         while reduced:
             reduced = False
-            for b, b_voo in zip(base, base_voo):
+            for b, b_voo in zip(basis, basis_voo):
                 quo, rem = pol.quo_rem(b.lt())
                 if quo:
-                    pol = pol - quo*b # pol == rem
+                    pol = pol - quo*b # i.e. pol = rem
                     voo = voo - quo*b_voo
                     reduced = True
         assert self.phi(voo) == pol, f"voo_reduce led the VoO astray."
@@ -538,7 +538,7 @@ class F5:
         'For a previously added signed polynomial in G_curr to become
          a reductor of r_{k_0}, it must meet four requirements:
 
-         (1) u = HT(r_{k_0})/HT(r_{k_j}) \in T
+         (1) u = HT(r_{k_0})/HT(r_{k_j}) ∈ T
          (2) NF(u_{t_j}, G_curr) = u_{t_j}
          (3) not is_rewriteable(u, r_{k_j})
          (4) u_{t_j} F_{k_j} = S(r_{k_0})
@@ -589,12 +589,11 @@ class F5:
             if divides(tprime,t):
                 u = t // tprime
                 mj, ej = sig(j)
-                if u * sig(j) != sig(k) and not is_rewritable(u, j) \
-                        and not is_top_reducible(u*mj, Gprev):
+                if u * sig(j) != sig(k) and not is_rewritable(u, j) and not is_top_reducible(u*mj, Gprev):
                     return set([j])
         return set()
 
-    def is_top_reducible(self, t, l):
+    def is_top_reducible(self, t, Gprev):
         """
         Note, that this function test traditional top reduction and
         not top_reduction as implemented in the function with the same
@@ -602,10 +601,7 @@ class F5:
         """
         R = self.R
         poly = self.poly
-        for g in l:
-            if R.monomial_divides(poly(g).lm(),t):
-                return True
-        return False
+        return any([R.monomial_divides(poly(g).lm(), t) for g in Gprev])
 
     def add_rule(self, s, k):
         self.Rules[s[1]].append( (s[0],k) )
@@ -774,11 +770,11 @@ class F5C(F5):
         F = sorted(F, key=cmp_to_key(compare_by_degree))
 
         f0 = F[0]
-        L[0] = (Signature(1, 0), f0*f0.lc()**(-1))
+        L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m))
         Rules.append(list())
 
-        Gprev = set([0])
-        B = set([f0])
+        Gprev = [0]
+        B = [poly(0)]
 
         for i in range(1, m):
             print(f"Increment {i}")
@@ -807,10 +803,10 @@ class F5C(F5):
         # we don't want to replace L but modify it
         L[:] = [(Signature(1,i), f) for i,f in enumerate(B)]
         Rules[:] = [[] for _ in range(len(B))]
-        Gcurr = set()
+        Gcurr = []
 
         for i,f in enumerate(B):
-            Gcurr.add( i )
+            Gcurr += [i]
             t = B[i].lt()
             for j in range(i+1, len(B)):
                 fjlt = B[j].lt()
@@ -818,9 +814,7 @@ class F5C(F5):
                 add_rule( Signature(u, j), -1 )
         return Gcurr
 
-
 class F4F5(F5C):
-#class F4F5(F5):
     """
     F4-Style F5
 
@@ -895,8 +889,8 @@ class F4F5(F5C):
         Find a reductor $g_i$ for $m$ in $G_{prev}$ and $G_{curr}$ subject
         to the following contraint.  is a
          * the leading monomial of $g_i$ divides $m$
-         * $g_i \in G_{prev}$ is preferred over $g_i \in G_{curr}$
-         * if $g_i \in G_{curr}$ then
+         * $g_i ∈ G_{prev}$ is preferred over $g_i ∈ G_{curr}$
+         * if $g_i ∈ G_{curr}$ then
            * $g_i$ is not rewritable
            * $g_i$ is not top reducible by $G_prev$
 
@@ -1177,8 +1171,8 @@ if __name__ == "__main__":
     if get_verbose() >= 2: print(f"––––––––––––\n Input:\n{polys}\n––––––––––––")
     gb, voos = f5(polys, homogenize=False)
 
-    products = [voo * vector(R, polys) for voo in voos]
-    same = [products[i] == gb[i] for i in range(len(gb))]
+    products = [f5.phi(voo) for voo in voos]
+    same = [pr == gb_elem for pr, gb_elem in zip(products, gb)]
 
     if get_verbose() >= 0: print(f"––––––––––––\n is Gröbner basis: {Ideal(gb).basis_is_groebner()}")
     if get_verbose() >= 2: print(f"––––––––––––\n GB:\n{gb}")
