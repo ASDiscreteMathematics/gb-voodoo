@@ -177,13 +177,15 @@ class F5:
             self.zero_reductions = 0
             self.reductions = 0
 
-    def phi(self, i):
+    def phi(self, v):
         """
-        Maps vector of origin at index 'i' to its polynomial under
-        the input system. Always results in the polynomial at 'i'.
+        Maps vector of origin v or voo at index 'i' to its polynomial
+        under the input system. Always results in the polynomial at 'i'.
         Retuns the polynomial, allowing to check consistency of voos.
         """
-        return self.voo(i) * vector(self.R, self.F)
+        if isinstance(v, (int, sage.rings.integer.Integer)):
+            v = self.voo(v)
+        return v * vector(self.R, self.F)
 
     def voo(self, i):
         return self.L[i][2]
