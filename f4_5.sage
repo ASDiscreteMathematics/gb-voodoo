@@ -229,7 +229,7 @@ class F5:
 
         f = F[0]
         L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
-        if phi(0) != poly(0): print(f" [!] Something wrong:\n{voo(0)}\n{poly(0)}.")
+        assert phi(0) == poly(0), f" [!] Something wrong:\n{voo(0)}\n{poly(0)}."
         Rules.append([])
 
         Gprev = set([0])
@@ -427,10 +427,10 @@ class F5:
             if get_verbose() >= 2: print(f"Processing {k} – {sig(k)}, {poly(k)}")
             h = poly(k).reduce(B)
             pol, voo_h = voo_reduce(k, B, B_voo)
-            assert h == pol, f"\nBuggy behavior in 'voo_reduce':\n    {h}\n        !=\n    {pol}"
-            if get_verbose() >= 1 and pol != poly(k): print(f"Reduced {poly(k)} to {pol}")
-            L[k] = (sig(k), pol, voo_h)
-            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            assert h == pol, f"\nBuggy behavior in 'voo_reduce':\n\t{h}\n\t!=\n\t{pol}"
+            if get_verbose() >= 2 and h != poly(k): print(f"Reduced {poly(k)} to {h}")
+            L[k] = (sig(k), h, voo_h)
+            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
             completed = completed.union( newly_completed )
             if get_verbose() >= 2 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
@@ -444,6 +444,7 @@ class F5:
         and keep track of how that alters it's vector of origin.
         Returns the fully reduced polynomial and corresponding VoO.
         """
+        assert all([self.phi(b_voo) == b for b, b_voo in zip(basis, basis_voo)]), f"basis mismatches voos."
         pol = self.poly(i)
         voo = self.voo(i)
         reduced = True
@@ -455,12 +456,7 @@ class F5:
                     pol = pol - quo*b # pol == rem
                     voo = voo - quo*b_voo
                     reduced = True
-                # assert rem == pol - quo*b
-                # if b.lt().divides(pol.lt()):
-                #     div = pol.lt()//b.lt()
-                #     pol -= div*b
-                #     voo -= div*b_voo
-                #     reduced = True
+        assert self.phi(voo) == pol, f"voo_reduce led the VoO astray."
         return pol, voo
 
     def top_reduction(self, k, Gprev, Gcurr):
@@ -512,7 +508,7 @@ class F5:
         J = find_reductor(k, Gprev, Gcurr)
         if not J:
             L[k] = ( sig(k), p/p.lc(), p_voo/p.lc() )
-            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             return set([k]),set()
         j = J.pop()
         q = poly(j)
@@ -527,11 +523,11 @@ class F5:
         # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
-            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             return set(), set([k])
         else:
             L.append( (u * sig(j), p, p_voo) )
-            if phi(-1) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
+            assert phi(-1) == poly(-1), f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}."
             add_rule(u * sig(j), len(L)-1)
             return set(), set([k, len(L)-1])
 
@@ -1057,7 +1053,7 @@ class F5SansRewriting(F5):
         J = find_reductor(k, Gprev, Gcurr)
         if not J:
             L[k] = ( sig(k), p/p.lc() , p_voo/p.lc() )
-            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             return set([k]), set()
         j = J.pop()
         q = poly(j)
@@ -1073,11 +1069,11 @@ class F5SansRewriting(F5):
         # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
-            if phi(k) != poly(k): print(f" [!] Something wrong:\n{voo(k)}\n{poly(k)}.")
+            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             return set(), set([k])
         else:
             L.append((u * sig(j), p, p_voo))
-            if phi(-1) != poly(-1): print(f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}.")
+            assert phi(-1) == poly(-1), f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}."
             return set(), set([k, len(L)-1])
 
     def find_reductor(self, k, Gprev, Gcurr):
