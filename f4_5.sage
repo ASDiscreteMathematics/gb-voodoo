@@ -223,7 +223,7 @@ class F5:
 
         Rules = self.Rules
         L = self.L
-
+        R = self.R
         m = len(F)
 
         f = F[0]
