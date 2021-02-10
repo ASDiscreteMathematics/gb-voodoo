@@ -747,6 +747,8 @@ class F5R(F5):
               i = i + 1
         return quotient, remainder
 
+## See Eder & Faugère (2014), Section 8.2 “F5C – Improved S-pair generation”
+## To enhance with VoOs, keep track of all re-definitions of mapping φ.
 class F5C(F5):
     def basis(self, F):
         """
@@ -759,35 +761,38 @@ class F5C(F5):
             G -- a list of polynomials; a Gröbner basis for <F>
         """
         incremental_basis = self.incremental_basis
+        voo = self.voo
         poly = self.poly
 
         self.__init__(F)
 
         Rules = self.Rules
+        R = self.R
         L = self.L
 
         m = len(F)
-        F = sorted(F, key=cmp_to_key(compare_by_degree))
 
-        f0 = F[0]
-        L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m))
+        f = F[0]
+        L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
         Rules.append(list())
 
-        Gprev = [0]
+        Gprev = {0}
         B = [poly(0)]
+        B_voo = [voo(0)]
 
         for i in range(1, m):
             print(f"Increment {i}")
             f = F[i]
-            L.append( (Signature(1,len(L)), f*f.lc()**(-1)) )
-            Gcurr = incremental_basis(len(L)-1, B, Gprev)
-            if any(poly(lambd) == 1 for lambd in Gcurr):
-                return set(1)
+            L.append( (Signature(1, len(L)), f/f.lc(), unit_vec(R, len(L), m)/f.lc())  )
+            Gcurr = incremental_basis(len(L)-1, B, B_voo, Gprev)
+            for j in range(len(Gcurr)):
+                if poly(j) == 1: return [poly(j)], [voo(j)]
             B = Ideal([poly(l) for l in Gcurr]).interreduced_basis()
-            #B = self.interreduce([poly(l) for l in Gcurr])
+            B_2, B_voo = self.interreduce_basis_voo([poly(l) for l in Gcurr], B_voo)
+            assert all([b in B_2 for b in B]) and all([b in B for b in B_2]), "Buggy behavior in interreduce_basis_voo."
             if i != m-1:
                 Gprev = self.setup_reduced_basis(B)
-        return B
+        return B, B_voo
 
     def setup_reduced_basis(self, B):
         """
@@ -796,14 +801,17 @@ class F5C(F5):
         OUTPUT:
             Gcurr -- index set for B
         """
+        raise NotImplementedError("Need to keep track of the basis changes – See Eder & Faugère (2014), Sec. 8.2")
         add_rule = self.add_rule
-        L = self.L
         Rules = self.Rules
+        m = len(self.F)
+        L = self.L
+        R = self.R
 
         # we don't want to replace L but modify it
-        L[:] = [(Signature(1,i), f) for i,f in enumerate(B)]
-        Rules[:] = [[] for _ in range(len(B))]
-        Gcurr = []
+        L[:] = [(Signature(1, i), f, "some vector") for i, f in enumerate(B)]
+        Rules[:] = [[]] * len(B)
+        Gcurr = set()
 
         for i,f in enumerate(B):
             Gcurr += [i]
