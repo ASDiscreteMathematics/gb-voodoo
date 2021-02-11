@@ -108,11 +108,17 @@ if get_verbose() >= 2:
 if get_verbose() >= 1 and all(same): print(f"––––––––––––\n \\o/ VoOs are all good! \\o/")
 assert all(same), "Some Vector of Origin is misbehaving…"
 if get_verbose() >= 1:
-    involvement_buckets = [0] * 2**(len(voos[0]))
+    len_v = len(voos[0])
+    involvement_buckets = [0] * (len_v + 1)
+    bucket_ids = []
     for voo in voos:
-        idx = sum([2**i for i, x in enumerate(voo) if x])
-        involvement_buckets[idx] += 1
-    print(f"––––––––––––\n Involvement:         {involvement_buckets}")
+        assert any(voo), "VoO is zero-vector: Interreduction of GB has failed."
+        invlv_id = sum([1 for x in voo if x]) # number of non-zero entries of VoO
+        involvement_buckets[invlv_id] += 1
+        bucket_ids += [invlv_id]
+    print(f"––––––––––––\n involvement:         {involvement_buckets}")
+    print(f" mean of involvement: {n(mean(bucket_ids), digits=3)}") # weighted mean
+    print(f" involvement metric:  {n(mean(bucket_ids) / len_v, digits=3)}") # normalize
 if get_verbose() >= 1: print(f"––––––––––––\n Zero reductions:     {f5.zero_reductions}")
 if get_verbose() >= 1:
     print(f"––––––––––––\n Non-Koszul Syzygies: {'None' if not f5.syzygies else ''}")
