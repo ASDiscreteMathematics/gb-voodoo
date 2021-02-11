@@ -217,6 +217,8 @@ class F5:
         voo = self.voo
         poly = self.poly
         incremental_basis = self.incremental_basis
+        interreduce_basis = self.interreduce_basis
+        regular_s_interreduce_basis = self.regular_s_interreduce_basis
 
         if not F: return [], []
         self.__init__(F)
@@ -243,9 +245,13 @@ class F5:
             for j in range(len(Gcurr)):
                 if poly(j) == 1:
                     return [poly(j)], [voo(j)]
+            Gcurr = regular_s_interreduce_basis(Gcurr)
             Gprev = Gcurr
             B = [poly(l) for l in Gcurr]
             B_voo = [voo(l) for l in Gcurr]
+        Gcurr = interreduce_basis(Gcurr)
+        B = [poly(l) for l in Gcurr]
+        B_voo = [voo(l) for l in Gcurr]
         return B, B_voo
 
     def incremental_basis(self, i, B, B_voo, Gprev):
@@ -288,6 +294,106 @@ class F5:
                 Gcurr.add(k)
         if get_verbose() >= 2: print(f"Ended with {len(Gcurr)} polynomials")
         return Gcurr
+
+    def regular_s_interreduce_basis(self, Gcurr):
+        voo, sig, poly = self.voo, self.sig, self.poly
+        regular_s_reduce = self.regular_s_reduce
+        get_sig_from_voo = self.get_sig_from_voo
+        phi = self.phi
+        L = self.L
+
+        G_red = set()
+        for k in Gcurr:
+            if not poly(k): continue
+            if sig(k) in [sig(j) for j in G_red]:
+                continue
+            assert sig(k) == get_sig_from_voo(voo(k)), "Mismatching sig and voo."
+            v = regular_s_reduce(k, [j for j in Gcurr if j != k])
+            p = phi(v)
+            if not p:
+                continue
+            v, p = v/p.lc(), p/p.lc()
+            s = get_sig_from_voo(v)
+            assert s == sig(k), f"Signature has changed during regular-s-reduction."
+            if v == voo(k):
+                G_red.add(k)
+            else:
+                assert s == get_sig_from_voo(v), "Mismatching sig and voo."
+                L.append( (s, p, v) )
+                G_red.add(len(L) - 1)
+        return G_red
+
+    def interreduce_basis(self, Gcurr):
+        """
+        Given a list of indices comprising a preliminary Gröbner basis,
+        returns a list of indices of an interreduced basis spanning the same ideal.
+        """
+        voo, sig, poly = self.voo, self.sig, self.poly
+        get_sig_from_voo = self.get_sig_from_voo
+        voo_reduce = self.voo_reduce
+        phi = self.phi
+        L = self.L
+
+        G_red = set()
+        for k in Gcurr:
+            if not poly(k): continue
+            B = [poly(j) for j in Gcurr if j != k]
+            Bv = [voo(j) for j in Gcurr if j != k]
+            p, v = voo_reduce(k, B, Bv)
+            if not p: continue
+            if v == voo(k):
+                G_red.add(k)
+            else:
+                s = get_sig_from_voo(v)
+                L.append( (s, p, v) )
+                G_red.add(len(L) - 1)
+        return G_red
+
+    def regular_s_reduce(self, k, G):
+        """
+        Given index k and list of indices G, returns true iff polynomial k is
+        reducible by any element in G without changing signature of k.
+        """
+        voo, sig, poly = self.voo, self.sig, self.poly
+        get_sig_from_voo = self.get_sig_from_voo
+        phi = self.phi
+        R = self.R
+
+        v = voo(k)[:] # copy, don't modify
+        r = 0
+        while phi(v) != r:
+            m = (phi(v) - r).lt()
+            i = 0
+            reduction_occured = False
+            while i < len(G) and not reduction_occured:
+                assert phi(voo(G[i])) == poly(G[i]), f"Mismatching poly and voo."
+                assert sig(G[i]) == get_sig_from_voo(voo(G[i])), f"Mismatching sig and voo."
+                h_i_lt = poly(G[i]).lt()
+                if h_i_lt.divides(m):
+                    sig_d = R(m / h_i_lt) * sig(G[i])
+                    sig_d = Signature(sig_d[0]/sig_d[0].lc(), sig_d[1])
+                    sig_v = get_sig_from_voo(v)
+                    if sig_d < sig_v:
+                        v -= R(m / h_i_lt) * voo(G[i])
+                        reduction_occured = True
+                        assert sig_v == get_sig_from_voo(v), f"Signature has changed!"
+                    else:
+                        i += 1
+                else:
+                    i += 1
+            if not reduction_occured:
+                r += m
+        return v
+
+    def get_sig_from_voo(self, voo):
+        '''
+        Given vector of origin, return its pot-signature.
+        '''
+        if voo.is_zero(): return Signature(0, 0)
+        i = next((j for j, x in enumerate(voo[::-1]) if x), None)
+        i = len(voo) - i - 1 # reverse above reversing: need rightmost non-zero index
+        mon = max(voo[i].monomials())
+        return Signature(mon, i)
 
     def critical_pair(self, k, l, i, Gprev):
         """
@@ -1110,6 +1216,11 @@ class Signature(UserList):
         if self[1] != other[1]:
             return self[1] < other[1]
         return self[0] < other[0]
+
+    def __gt__(self, other):
+        if self[1] != other[1]:
+            return self[1] > other[1]
+        return self[0] > other[0]
 
     def __eq__(self, other):
         return self[0] == other[0] and self[1] == other[1]

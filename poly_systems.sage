@@ -98,9 +98,26 @@ products = [f5.phi(voo) for voo in voos]
 same = [pr == gb_elem for pr, gb_elem in zip(products, gb)]
 
 if get_verbose() >= 0: print(f"––––––––––––\n is Gröbner basis: {Ideal(gb).basis_is_groebner()}")
-if get_verbose() >= 2: print(f"––––––––––––\n GB:\n{gb}")
-if get_verbose() >= 2: print(f"––––––––––––\n VoOs:\n{voos}")
+if get_verbose() >= 1:
+    gb_builtin = Ideal(polys).groebner_basis()
+    gb_in_gb_builtin = all([b in gb_builtin for b in gb])
+    gb_builtin_in_gb = all([b in gb for b in gb_builtin])
+    print(f"––––––––––––")
+    if gb_in_gb_builtin and gb_builtin_in_gb:
+        print(f" \\o/ Correctly computed reduced GB! \\o/")
+    else:
+        print(f"              len: {len(gb)}")
+        print(f" len sage reduced: {len(gb_builtin)}")
+        print(f"gb ⊆ gb_builtin:   {gb_in_gb_builtin}")
+        print(f"gb_builtin ⊆ gb:   {gb_builtin_in_gb}")
+        print(f"––––––––––––")
+        print(f" in GB but not GB_builtin:")
+        [print(f"                           {b}") for b in gb if not b in gb_builtin]
+        print(f" in GB_builtin but not GB:")
+        [print(f"                           {b}") for b in gb_builtin if not b in gb]
 if get_verbose() >= 2:
+    print(f"––––––––––––\n GB:\n{gb}")
+    print(f"––––––––––––\n VoOs:\n{voos}")
     print(f"––––––––––––\n Products of Vectors of Origin and input F:")
     col_1_len = max([len(str(voo)) for voo in voos])
     col_2_len = max([len(str(pr)) for pr in products])
