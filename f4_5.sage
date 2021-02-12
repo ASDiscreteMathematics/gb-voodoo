@@ -238,7 +238,7 @@ class F5:
         B_voo = [voo(0)]
 
         for i in range(1,m):
-            if get_verbose() >= 0: print(f"Increment {i}")
+            if get_verbose() >= 0: print(f"Starting incremental basis up to {i}")
             f = F[i]
             L.append( (Signature(1,i), f/f.lc(), unit_vec(R, i, m)/f.lc()) )
             Gcurr = incremental_basis(i, B, B_voo, Gprev)
@@ -303,15 +303,14 @@ class F5:
         L = self.L
 
         G_red = set()
+        if get_verbose() >= 1: print(f"Regular-s-interreducing {len(Gcurr)} polynomials.")
         for k in Gcurr:
             if not poly(k): continue
-            if sig(k) in [sig(j) for j in G_red]:
-                continue
+            if sig(k) in [sig(j) for j in G_red]: continue
             assert sig(k) == get_sig_from_voo(voo(k)), "Mismatching sig and voo."
             v = regular_s_reduce(k, [j for j in Gcurr if j != k])
             p = phi(v)
-            if not p:
-                continue
+            if not p: continue
             v, p = v/p.lc(), p/p.lc()
             s = get_sig_from_voo(v)
             assert s == sig(k), f"Signature has changed during regular-s-reduction."
@@ -340,6 +339,7 @@ class F5:
             B = [poly(j) for j in Gcurr if j != k]
             Bv = [voo(j) for j in Gcurr if j != k]
             p, v = voo_reduce(k, B, Bv)
+            assert poly(k).reduce(B) == p, f" [!] Buggy behavior in 'voo_reduce'!"
             if not p: continue
             if v == voo(k):
                 G_red.add(k)
@@ -465,9 +465,9 @@ class F5:
          polynomials will always be of the form u_L*S(r_{i_L}) in
          compute_spols.'
         """
-        voo = self.voo
-        poly = self.poly
-        sig = self.sig
+        voo, sig, poly = self.voo, self.sig, self.poly
+        phi = self.phi
+        get_sig_from_voo = self.get_sig_from_voo
         is_rewritable = self.is_rewritable
         syzygies = self.syzygies
         add_rule = self.add_rule
@@ -478,17 +478,21 @@ class F5:
         P = sorted(P, key=lambda x: x[0])
         for (t,k,u,l,v) in P:
             if not is_rewritable(u,k) and not is_rewritable(v,l):
+                assert sig(k) == get_sig_from_voo(voo(k)), f"Mismatching sig and voo: index {k}."
+                assert sig(l) == get_sig_from_voo(voo(l)), f"Mismatching sig and voo: index {l}."
                 s = u*poly(k)-v*poly(l) # S-Polynomial
                 s_voo = u*voo(k)-v*voo(l)
                 if s != 0:
                     s_voo /= s.lc() # normalize
                     s /= s.lc()
+                assert phi(s_voo) == s, "Mismatching voo and poly."
+                assert u * sig(k) == get_sig_from_voo(s_voo), "Mismatching sig and voo."
                 L.append( (u * sig(k), s, s_voo) )
                 add_rule(u * sig(k), len(L)-1)
                 if s != 0:
                     S += [len(L)-1]
                 else:
-                    if get_verbose() >= -1: print(f"S-Polynomial reduced to zero! {k} and {l}")
+                    if get_verbose() >= 0: print(f"S-Polynomial reduced to zero! {k} and {l}")
                     syzygies += [len(L)-1]
         S = sorted(S, key=lambda x: sig(x))
         return S
@@ -517,26 +521,29 @@ class F5:
          in the phrase, "If top_reduction determines that the signed
          polynomial can be reduced ..."'
         """
-        F = self.F
-        L = self.L
         phi = self.phi
-        sig = self.sig
-        voo = self.voo
-        poly = self.poly
+        sig, voo, poly = self.sig, self.voo, self.poly
+        get_sig = lambda x : self.get_sig_from_voo(voo(x))
         top_reduction = self.top_reduction
         voo_reduce = self.voo_reduce
+        L = self.L
+
+        assert all([b == phi(bv) for b, bv in zip(B, B_voo)]), f"Basis B and VoO's don't match."
+        assert all([phi(s) == poly(s) for s in S]), f"reduction: Inconsistent voo and poly in S."
+        assert all([sig(s) == get_sig(s) for s in S]), f"reduction: Inconsistent voo and sig in S."
 
         to_do = S
         completed = set()
         while to_do:
             k, to_do = to_do[0], to_do[1:]
+            assert phi(k) == poly(k), f"reduction: Mismatching voo and poly at index {k}."
+            assert sig(k) == get_sig(k), f"reduction: Mismatching voo and sig at index {k}."
             if get_verbose() >= 2: print(f"Processing {k} – {sig(k)}, {poly(k)}")
             h = poly(k).reduce(B)
             pol, voo_h = voo_reduce(k, B, B_voo)
-            assert h == pol, f"\nBuggy behavior in 'voo_reduce':\n\t{h}\n\t!=\n\t{pol}"
+            assert h == pol, f"\nBuggy behavior in 'voo_reduce'."
             if get_verbose() >= 2 and h != poly(k): print(f"Reduced {poly(k)} to {h}")
             L[k] = (sig(k), h, voo_h)
-            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
             completed = completed.union( newly_completed )
             if get_verbose() >= 2 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
@@ -606,15 +613,13 @@ class F5:
          r_N has a different signature than r_{k_0} and r_{k_0} might
          still be reducible by another signed polynomial.
         """
+        sig, poly, voo = self.sig, self.poly, self.voo
+        get_sig_from_voo = self.get_sig_from_voo
         find_reductor = self.find_reductor
         syzygies = self.syzygies
         add_rule = self.add_rule
         phi = self.phi
-        voo = self.voo
-        poly = self.poly
-        sig = self.sig
         L = self.L
-        F = self.F
 
         if poly(k) == 0:
             if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
@@ -626,8 +631,9 @@ class F5:
         J = find_reductor(k, Gprev, Gcurr)
         if not J:
             L[k] = ( sig(k), p/p.lc(), p_voo/p.lc() )
-            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
-            return set([k]),set()
+            assert phi(k) == poly(k), f"top_reduction: Mismatching voo and poly at index {k}."
+            assert sig(k) == get_sig_from_voo(voo(k)), f"top_reduction: Mismatching voo and sig at index {k}."
+            return {k}, set()
         j = J.pop()
         q = poly(j)
         q_voo = voo(j)
@@ -641,13 +647,16 @@ class F5:
         # no need to add k to syzygies below: calling function “reduction” will redo k
         if u * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
-            assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
-            return set(), set([k])
+            assert phi(k) == poly(k), f"top_reduction: Mismatching voo and poly at index {k}."
+            assert sig(k) == get_sig_from_voo(voo(k)), f"top_reduction: Mismatching voo and sig at index {k}."
+            return set(), {k}
         else:
-            L.append( (u * sig(j), p, p_voo) )
-            assert phi(-1) == poly(-1), f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}."
+            s = u * sig(j)
+            assert p == phi(p_voo), f"top_reduction: Mismatching voo and poly at index {len(L)-1}."
+            assert s == get_sig_from_voo(p_voo), f"top_reduction: Mismatching voo and sig at index {len(L)-1}."
+            L.append( (s, p, p_voo) )
             add_rule(u * sig(j), len(L)-1)
-            return set(), set([k, len(L)-1])
+            return set(), {k, len(L)-1}
 
     def find_reductor(self, k, Gprev, Gcurr):
         """
@@ -779,7 +788,7 @@ class F5R(F5):
         B = [f0]
 
         for i in range(1, m):
-            print(f"Increment {i}")
+            if get_verbose() >= 1: print(f"Starting incremental basis up to {i}")
             f = F[i]
             L.append( (Signature(1,i), f*f.lc()**(-1)) )
             Gcurr = incremental_basis(i, B, Gprev)
@@ -899,7 +908,7 @@ class F5C(F5):
         B_voo = [voo(0)]
 
         for i in range(1, m):
-            print(f"Increment {i}")
+            if get_verbose() >= 1: print(f"Starting incremental basis up to {i}")
             f = F[i]
             L.append( (Signature(1, len(L)), f/f.lc(), unit_vec(R, len(L), m)/f.lc())  )
             Gcurr = incremental_basis(len(L)-1, B, B_voo, Gprev)
@@ -1060,7 +1069,7 @@ class F4F5(F5C):
             return F
         A,v = Sequence(F).coefficient_matrix()
         self.zero_reductions += A.nrows()-A.rank()
-        print(f"{A.nrows():>4} x {A.ncols():>4}, {A.rank():>4}, {A.nrows()-A.rank():>4}")
+        if get_verbose() >= 1: print(f"{A.nrows():>4} x {A.ncols():>4}, {A.rank():>4}, {A.nrows()-A.rank():>4}")
         nrows, ncols = A.nrows(), A.ncols()
         for c in range(ncols):
             for r in range(0,nrows):
@@ -1179,7 +1188,6 @@ class F5SansRewriting(F5):
         q = poly(j)
         q_voo = voo(j)
         u = p.lt()//q.lt()
-        print(f"\n{k}, {j}")
         p = p - u*q
         p_voo = p_voo - u*q_voo
         self.reductions += 1
