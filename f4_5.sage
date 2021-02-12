@@ -448,7 +448,7 @@ class F5:
         # necessary, see class F5SansRewriting below
         if is_rewritable(u0, k) or is_rewritable(u1, l):
             return set()
-        if u0 * sig(k) < u1 * sig(l):
+        if u0/u0.lc() * sig(k) < u1/u1.lc() * sig(l):
             u0, u1 = u1, u0
             k, l = l, k
         return set([(t,k,u0,l,u1)])
@@ -485,10 +485,11 @@ class F5:
                 if s != 0:
                     s_voo /= s.lc() # normalize
                     s /= s.lc()
+                sig_k = u/u.lc() * sig(k)
                 assert phi(s_voo) == s, "Mismatching voo and poly."
-                assert u * sig(k) == get_sig_from_voo(s_voo), "Mismatching sig and voo."
-                L.append( (u * sig(k), s, s_voo) )
-                add_rule(u * sig(k), len(L)-1)
+                assert sig_k == get_sig_from_voo(s_voo), "Mismatching sig and voo."
+                L.append( (sig_k, s, s_voo) )
+                add_rule(sig_k, len(L)-1)
                 if s != 0:
                     S += [len(L)-1]
                 else:
@@ -644,18 +645,18 @@ class F5:
         if p != 0:
             p_voo /= p.lc()
             p /= p.lc()
+        sig_j = u/u.lc() * sig(j)
         # no need to add k to syzygies below: calling function “reduction” will redo k
-        if u * sig(j) < sig(k):
+        if sig_j < sig(k):
             L[k] = (sig(k), p, p_voo)
             assert phi(k) == poly(k), f"top_reduction: Mismatching voo and poly at index {k}."
             assert sig(k) == get_sig_from_voo(voo(k)), f"top_reduction: Mismatching voo and sig at index {k}."
             return set(), {k}
         else:
-            s = u * sig(j)
             assert p == phi(p_voo), f"top_reduction: Mismatching voo and poly at index {len(L)-1}."
-            assert s == get_sig_from_voo(p_voo), f"top_reduction: Mismatching voo and sig at index {len(L)-1}."
-            L.append( (s, p, p_voo) )
-            add_rule(u * sig(j), len(L)-1)
+            assert sig_j == get_sig_from_voo(p_voo), f"top_reduction: Mismatching voo and sig at index {len(L)-1}."
+            L.append( (sig_j, p, p_voo) )
+            add_rule(sig_j, len(L)-1)
             return set(), {k, len(L)-1}
 
     def find_reductor(self, k, Gprev, Gcurr):
@@ -716,7 +717,7 @@ class F5:
             if divides(tprime,t):
                 u = t // tprime
                 mj, ej = sig(j)
-                if u * sig(j) != sig(k) and not is_rewritable(u, j) and not is_top_reducible(u*mj, Gprev):
+                if u/u.lc() * sig(j) != sig(k) and not is_rewritable(u, j) and not is_top_reducible(u*mj, Gprev):
                     return set([j])
         return set()
 
@@ -1051,7 +1052,7 @@ class F4F5(F5C):
                 t =  R.monomial_quotient(m,poly(k).lm())
                 if is_rewritable(t, k):
                     continue
-                if is_top_reducible(t * sig(k)[0], Gprev):
+                if is_top_reducible(t/t.lc() * sig(k)[0], Gprev):
                     continue
                 return t, L[k]
         return 0, -1
@@ -1127,7 +1128,7 @@ class F5SansRewriting(F5):
             return set()
         if e1 == i and is_top_reducible(u1*m1, Gprev):
             return set()
-        if u0 * sig(k) < u1 * sig(l):
+        if u0/u0.lc() * sig(k) < u1/u1.lc() * sig(l):
             u0, u1 = u1, u0
             k, l = l, k
         return set([(t,k,u0,l,u1)])
@@ -1151,7 +1152,7 @@ class F5SansRewriting(F5):
             if s != 0:
                 s_voo /= s.lc()
                 s /= s.lc() # normalize
-            L.append( (u * sig(k), s, s_voo) )
+            L.append( (u/u.lc() * sig(k), s, s_voo) )
             if s != 0:
                 S += [len(L)-1]
             else:
@@ -1195,12 +1196,12 @@ class F5SansRewriting(F5):
             p_voo /= p.lc()
             p /= p.lc()
         # no need to add k to syzygies below: calling function “reduction” will redo k
-        if u * sig(j) < sig(k):
+        if u/u.lc() * sig(j) < sig(k):
             L[k] = (sig(k), p, p_voo)
             assert phi(k) == poly(k), f" [!] Something wrong:\n{voo(k)}\n{poly(k)}."
             return set(), set([k])
         else:
-            L.append((u * sig(j), p, p_voo))
+            L.append((u/u.lc() * sig(j), p, p_voo))
             assert phi(-1) == poly(-1), f" [!] Something wrong:\n{voo(-1)}\n{poly(-1)}."
             return set(), set([k, len(L)-1])
 
@@ -1219,7 +1220,7 @@ class F5SansRewriting(F5):
             if divides(tprime,t):
                 u = t // tprime
                 mj, ej = sig(j)
-                if u * sig(j) != sig(k) and not is_top_reducible(u*mj, Gprev):
+                if u/u.lc() * sig(j) != sig(k) and not is_top_reducible(u*mj, Gprev):
                     return set([j])
         return set()
 
