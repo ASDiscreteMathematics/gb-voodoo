@@ -550,20 +550,32 @@ class F5:
         and keep track of how that alters it's vector of origin.
         Returns the fully reduced polynomial and corresponding VoO.
         """
-        assert all([self.phi(b_voo) == b for b, b_voo in zip(basis, basis_voo)]), f"basis mismatches voos."
-        pol = self.poly(i)
-        voo = self.voo(i)
+        sig, poly, voo = self.sig, self.poly, self.voo
+        get_sig_from_voo = self.get_sig_from_voo
+        phi = self.phi
+
+        assert all([phi(b_voo) == b for b, b_voo in zip(basis, basis_voo)]), f"basis mismatches voos."
+        assert phi(voo(i)) == poly(i), f"voo_reduce: Mismatching voo and poly at index {i}."
+        assert sig(i) == get_sig_from_voo(voo(i)), f"voo_reduce: Mismatching voo and sig at index {i}."
+        p = poly(i)
+        v = voo(i)
         reduced = True
         while reduced:
             reduced = False
             for b, b_voo in zip(basis, basis_voo):
-                quo, rem = pol.quo_rem(b.lt())
-                if quo:
-                    pol = pol - quo*b # i.e. pol = rem
-                    voo = voo - quo*b_voo
-                    reduced = True
-        assert self.phi(voo) == pol, f"voo_reduce led the VoO astray."
-        return pol, voo
+                p_before_b = p
+                reduced_by_b = True # In order to mimic built-in reduction, first completely reduce using b
+                while reduced_by_b:
+                    reduced_by_b = False
+                    quo, rem = p.quo_rem(b.lt())
+                    if quo:
+                        p = p - quo*b
+                        v = v - quo*b_voo
+                        reduced = True
+                        reduced_by_b = True
+                assert p_before_b.reduce([b]) == p, "voo_reduce: reduction of p by b seems wrong"
+        assert phi(v) == p, f"voo_reduce: Kept track of voo incorrectly."
+        return p, v
 
     def top_reduction(self, k, Gprev, Gcurr):
         """
