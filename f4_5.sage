@@ -230,29 +230,22 @@ class F5:
 
         f = F[0]
         L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
-        assert phi(0) == poly(0), f" [!] Something wrong:\n{voo(0)}\n{poly(0)}."
-        Rules.append([])
+        assert phi(0) == poly(0), f"Mismatching poly and voo at index 0."
+        Rules.append( [] )
 
-        Gprev = set([0])
-        B = [poly(0)]
-        B_voo = [voo(0)]
-
+        G = set([0])
         for i in range(1,m):
             if get_verbose() >= 0: print(f"Starting incremental basis up to {i}")
             f = F[i]
             L.append( (Signature(1,i), f/f.lc(), unit_vec(R, i, m)/f.lc()) )
-            Gcurr = incremental_basis(i, B, B_voo, Gprev)
-            for j in range(len(Gcurr)):
-                if poly(j) == 1:
-                    return [poly(j)], [voo(j)]
-            Gcurr = regular_s_interreduce_basis(Gcurr)
-            Gprev = Gcurr
-            B = [poly(l) for l in Gcurr]
-            B_voo = [voo(l) for l in Gcurr]
-        Gcurr = interreduce_basis(Gcurr)
-        B = [poly(l) for l in Gcurr]
-        B_voo = [voo(l) for l in Gcurr]
-        return B, B_voo
+            assert phi(-1) == poly(-1), f"Mismatching poly and voo at index {len(L)-1}."
+            B, B_voo = [poly(l) for l in G], [voo(l) for l in G]
+            G = incremental_basis(i, B, B_voo, G)
+            for j in range(len(G)):
+                if poly(j) == 1: return [poly(j)], [voo(j)]
+            G = regular_s_interreduce_basis(G)
+        G = interreduce_basis(G)
+        return [poly(l) for l in G], [voo(l) for l in G]
 
     def incremental_basis(self, i, B, B_voo, Gprev):
         """
