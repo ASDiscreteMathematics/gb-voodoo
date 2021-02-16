@@ -2,7 +2,6 @@ load('f4_5.sage')
 
 f5  = F5() # or: FR5, F5C, F4F5
 
-set_verbose(1)
 R = PolynomialRing(GF(283), 'x', 6)
 R.inject_variables()
 
@@ -34,6 +33,8 @@ polys = [ # contains a bunch of test-systems, each seperated by a new line
     x0^2*x1 - x1^3,
     x1^3 - x2*x3^2 - x3^3,
 
+
+    ## Bar
     # p = 283
     # -x0 + 15*x1 + x2,
     # -x3 + 15*x4 + x5,
@@ -91,6 +92,7 @@ polys = [ # contains a bunch of test-systems, each seperated by a new line
 
 ]
 
+set_verbose(1)
 if get_verbose() >= 2: print(f"––––––––––––\n Input:\n{polys}\n––––––––––––")
 gb, voos = f5(polys, homogenize=False)
 
@@ -102,19 +104,28 @@ if get_verbose() >= 1:
     gb_builtin = Ideal(polys).groebner_basis()
     gb_in_gb_builtin = all([b in gb_builtin for b in gb])
     gb_builtin_in_gb = all([b in gb for b in gb_builtin])
+    gb_in_ideal_gb_builtin = all([b in Ideal(gb_builtin) for b in gb])
+    gb_builtin_in_ideal_gb = all([b in Ideal(gb) for b in gb_builtin])
+    span_same_ideal = Ideal(gb) == Ideal(gb_builtin)
     print(f"––––––––––––")
     if gb_in_gb_builtin and gb_builtin_in_gb:
         print(f" \\o/ Correctly computed reduced GB! \\o/")
-    else:
-        print(f"              len: {len(gb)}")
-        print(f" len sage reduced: {len(gb_builtin)}")
-        print(f"gb ⊆ gb_builtin:   {gb_in_gb_builtin}")
-        print(f"gb_builtin ⊆ gb:   {gb_builtin_in_gb}")
-        print(f"––––––––––––")
-        print(f" in GB but not GB_builtin:")
-        [print(f"                           {b}") for b in gb if not b in gb_builtin]
-        print(f" in GB_builtin but not GB:")
-        [print(f"                           {b}") for b in gb_builtin if not b in gb]
+if get_verbose() >= 2:
+    print(f"––––––––––––")
+    print(f"              len: {len(gb)}")
+    print(f" len sage reduced: {len(gb_builtin)}")
+    print(f"gb ⊆ <gb_builtin>: {gb_in_ideal_gb_builtin}")
+    print(f"gb_builtin ⊆ <gb>: {gb_builtin_in_ideal_gb}")
+    print(f"  span same ideal: {span_same_ideal}")
+    print(f"  gb ⊆ gb_builtin: {gb_in_gb_builtin}")
+    print(f"  gb_builtin ⊆ gb: {gb_builtin_in_gb}")
+    print(f"––––––––––––")
+    print(f" GB\\GB_builtin:")
+    [print(f"                      {f5.get_sig_from_voo(voos[i])} : {gb[i]}") for i in range(len(gb)) if not gb[i] in gb_builtin]
+    print(f" GB∩GB_builtin:")
+    [print(f"                      {f5.get_sig_from_voo(voos[i])} : {gb[i]}") for i in range(len(gb)) if gb[i] in gb_builtin]
+    print(f" GB_builtin\\GB:")
+    [print(f"                      [?, ?] : {b}") for b in gb_builtin if not b in gb]
 if get_verbose() >= 2:
     print(f"––––––––––––\n GB:\n{gb}")
     print(f"––––––––––––\n VoOs:\n{voos}")
