@@ -317,7 +317,7 @@ class F5:
     def interreduce_basis(self, Gcurr):
         """
         Given a list of indices comprising a preliminary Gröbner basis,
-        returns a list of indices of an interreduced basis spanning the same ideal.
+        returns a list of indices of a reduced basis spanning the same ideal.
         """
         voo, sig, poly = self.voo, self.sig, self.poly
         get_sig_from_voo = self.get_sig_from_voo
@@ -325,21 +325,25 @@ class F5:
         phi = self.phi
         L = self.L
 
-        G_red = set()
-        for k in Gcurr:
-            if not poly(k): continue
-            B = [poly(j) for j in Gcurr if j != k]
-            Bv = [voo(j) for j in Gcurr if j != k]
-            p, v = voo_reduce(k, B, Bv)
-            assert poly(k).reduce(B) == p, f" [!] Buggy behavior in 'voo_reduce'!"
-            if not p: continue
-            if v == voo(k):
-                G_red.add(k)
-            else:
-                s = get_sig_from_voo(v)
-                L.append( (s, p, v) )
-                G_red.add(len(L) - 1)
-        return G_red
+        Gcurr = list(Gcurr)
+        reduction_occured = True
+        while reduction_occured:
+            reduction_occured = False
+            i = 0
+            while i < len(Gcurr) and not reduction_occured:
+                B = [poly(j) for j in Gcurr if j != Gcurr[i]]
+                Bv = [voo(j) for j in Gcurr if j != Gcurr[i]]
+                p, v = voo_reduce(Gcurr[i], B, Bv)
+                assert poly(Gcurr[i]).reduce(B) == p, f" [!] Buggy behavior in 'voo_reduce'!"
+                if not p:
+                    reduction_occured = True
+                    Gcurr = [j for j in Gcurr if j != Gcurr[i]]
+                elif p != poly(Gcurr[i]):
+                    reduction_occured = True
+                    L[Gcurr[i]] = ( get_sig_from_voo(v), p, v )
+                else:
+                    i += 1
+        return set(Gcurr)
 
     def regular_s_reduce(self, k, G):
         """
