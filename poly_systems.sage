@@ -270,26 +270,26 @@ for p in polys:
 assert matrix(vods) * vector(gb) == vector(polys), f"Some vector of destination is misbehaving…"
 if get_verbose() >= 1:
     len_voo = len(voos[0])
-    invoolvement_buckets = [0] * (len_voo + 1)
+    invoolvement_buckets = [0] * len_voo
     bucket_ids_voo = []
     for voo in voos:
         assert any(voo), "VoO is zero-vector: Interreduction of GB has failed."
-        invlv_id = sum([1 for x in voo if x]) # number of non-zero entries of VoO
+        invlv_id = sum([1 for x in voo if x]) - 1
         invoolvement_buckets[invlv_id] += 1
         bucket_ids_voo += [invlv_id]
     print(f"–––––––––––– Involvement of VoOs:\n invoolvement:         {invoolvement_buckets}")
     print(f" mean of invoolvement: {n(mean(bucket_ids_voo), digits=3)}") # weighted mean
-    print(f" invoolvement metric:  {n(mean(bucket_ids_voo) / len_voo, digits=3)}") # normalize
+    print(f" invoolvement metric:  {n(mean(bucket_ids_voo) / (len_voo - 1), digits=3)}") # normalize
     len_vod = len(vods[0])
-    invodlvement_buckets = [0] * (len_vod + 1)
+    invodlvement_buckets = [0] * len_vod
     bucket_ids_vod = []
     for vod in vods:
-        invlv_id = sum([1 for x in vod if x]) # number of non-zero entries of VoD
+        invlv_id = sum([1 for x in vod if x]) - 1
         invodlvement_buckets[invlv_id] += 1
         bucket_ids_vod += [invlv_id]
     print(f"–––––––––––– Involvement of VoDs:\n invodlvement:         {invodlvement_buckets}")
     print(f" mean of invodlvement: {n(mean(bucket_ids_vod), digits=3)}") # weighted mean
-    print(f" invodlvement metric:  {n(mean(bucket_ids_vod) / len_vod, digits=3)}") # normalize
+    print(f" invodlvement metric:  {1-n(mean(bucket_ids_vod) / (len_vod - 1), digits=3)}") # normalize
 if get_verbose() >= 1: print(f"––––––––––––\n Zero reductions:     {f5.zero_reductions}")
 if get_verbose() >= 1:
     print(f"––––––––––––\n Non-Koszul Syzygies: {'None' if not f5.syzygies else ''}")
