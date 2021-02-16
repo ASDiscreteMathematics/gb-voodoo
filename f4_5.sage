@@ -235,7 +235,7 @@ class F5:
 
         G = set([0])
         for i in range(1,m):
-            if get_verbose() >= 0: print(f"Starting incremental basis up to {i}")
+            if get_verbose() >= 0: print(f"Starting incremental basis including f_{i}")
             f = F[i]
             L.append( (Signature(1,i), f/f.lc(), unit_vec(R, i, m)/f.lc()) )
             assert phi(-1) == poly(-1), f"Mismatching poly and voo at index {len(L)-1}."
@@ -243,7 +243,10 @@ class F5:
             G = incremental_basis(i, B, B_voo, G)
             for j in range(len(G)):
                 if poly(j) == 1: return [poly(j)], [voo(j)]
+            if get_verbose() >= 1: print(f"Done with increment {i}. Is GB for <f_0, {'…, ' if i>1 else ''}f_{i}>: {Ideal([poly(l) for l in G]).basis_is_groebner()}")
+        if get_verbose() >= 0: print(f"Interreducing basis of length {len(G)}.")
         G = interreduce_basis(G)
+        assert sorted(set([poly(k) for k in G])) == sorted(set([poly(k).reduce([poly(j) for j in G if j != k]) for k in G])), f"Reduced too little."
         return [poly(l) for l in G], [voo(l) for l in G]
 
     def incremental_basis(self, i, B, B_voo, Gprev):
@@ -274,11 +277,11 @@ class F5:
 
         P = reduce(lambda x,y: x.union(y), [critical_pair(curr_idx, j, i, Gprev) for j in Gprev], set())
         while P:
-            d = min(t.degree() for (t,k,u,l,v) in P)
+            d = min(t.degree() for (t,_,_,_,_) in P)
             Pd = [(t,k,u,l,v) for (t,k,u,l,v) in P if t.degree() == d]
-            if get_verbose() >= 0: print(f"Processing {len(Pd)} pair{'' if len(Pd)==1 else 's'} of degree {d}")
-            if get_verbose() >= 2: [print(each) for each in Pd]
             P = P.difference(Pd)
+            if get_verbose() >= 0: print(f"Processing {len(Pd):>3} pairs of degree {d:>3}.", end=" ")
+            if get_verbose() >= 0: print(f"critical pairs in P: {len(P):>3} max degree: {max([t.degree() for (t,_,_,_,_) in P], default=0):>3}.")
             S = compute_spols(Pd)
             R = reduction(S, B, B_voo, Gprev, Gcurr)
             for k in R:
@@ -296,6 +299,7 @@ class F5:
 
         G_red = set()
         if get_verbose() >= 1: print(f"Regular-s-interreducing {len(Gcurr)} polynomials.")
+        if get_verbose() >= 2: print(f"Their signatures are: {[sig(k) for k in Gcurr]}")
         for k in Gcurr:
             if not poly(k): continue
             if sig(k) in [sig(j) for j in G_red]: continue
@@ -309,7 +313,6 @@ class F5:
             if v == voo(k):
                 G_red.add(k)
             else:
-                assert s == get_sig_from_voo(v), "Mismatching sig and voo."
                 L.append( (s, p, v) )
                 G_red.add(len(L) - 1)
         return G_red
