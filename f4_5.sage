@@ -243,7 +243,6 @@ class F5:
             G = incremental_basis(i, B, B_voo, G)
             for j in range(len(G)):
                 if poly(j) == 1: return [poly(j)], [voo(j)]
-            G = regular_s_interreduce_basis(G)
         G = interreduce_basis(G)
         return [poly(l) for l in G], [voo(l) for l in G]
 
