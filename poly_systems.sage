@@ -226,7 +226,11 @@ gb, voos = f5(polys, homogenize=False)
 products = [f5.phi(voo) for voo in voos]
 same = [pr == gb_elem for pr, gb_elem in zip(products, gb)]
 
-if get_verbose() >= 0: print(f"––––––––––––\n is Gröbner basis: {Ideal(gb).basis_is_groebner()}")
+if get_verbose() >= 0:
+    print(f"––––––––––––")
+    print(f" is Gröbner basis:       {Ideal(gb).basis_is_groebner()}")
+    print(f" degree of regularity:   {f5.dreg}")
+    print(f" highest degree in gb:   {max([b.degree() for b in gb])}")
 if get_verbose() >= 1:
     gb_builtin = Ideal(polys).groebner_basis()
     gb_in_gb_builtin = all([b in gb_builtin for b in gb])

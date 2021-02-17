@@ -174,6 +174,7 @@ class F5:
             self.syzygies = []
             self.zero_reductions = 0
             self.reductions = 0
+            self.dreg = 0
 
     def phi(self, v):
         """
@@ -278,6 +279,7 @@ class F5:
         P = reduce(lambda x,y: x.union(y), [critical_pair(curr_idx, j, i, Gprev) for j in Gprev], set())
         while P:
             d = min(t.degree() for (t,_,_,_,_) in P)
+            self.dreg = max(self.dreg, d)
             Pd = [(t,k,u,l,v) for (t,k,u,l,v) in P if t.degree() == d]
             P = P.difference(Pd)
             if get_verbose() >= 0: print(f"Processing {len(Pd):>3} pairs of degree {d:>3}.", end=" ")
@@ -288,6 +290,7 @@ class F5:
                 P = reduce(lambda x,y: x.union(y), [critical_pair(j, k, i, Gprev) for j in Gcurr], P)
                 Gcurr.add(k)
         if get_verbose() >= 2: print(f"Ended with {len(Gcurr)} polynomials")
+        if get_verbose() >= 1: print(f"Current highest degree encountered: {self.dreg}")
         return Gcurr
 
     def regular_s_interreduce_basis(self, Gcurr):
