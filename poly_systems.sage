@@ -343,7 +343,8 @@ if get_verbose() >= 1:
         bucket_ids_voo += [invlv_id]
     print(f"–––––––––––– Involvement of VoOs:\n invoolvement:         {invoolvement_buckets}")
     print(f" mean of invoolvement: {n(mean(bucket_ids_voo), digits=3)}") # weighted mean
-    print(f" invoolvement metric:  {n(mean(bucket_ids_voo) / (len_voo - 1), digits=3)}") # normalize
+    print(f" invoolvement metric:  ", end='')
+    print( n(mean(bucket_ids_voo) / (len_voo - 1), digits=3) if len_voo > 1 else 'NaN') # normalize
     len_vod = len(vods[0])
     invodlvement_buckets = [0] * len_vod
     bucket_ids_vod = []
@@ -353,7 +354,8 @@ if get_verbose() >= 1:
         bucket_ids_vod += [invlv_id]
     print(f"–––––––––––– Involvement of VoDs:\n invodlvement:         {invodlvement_buckets}")
     print(f" mean of invodlvement: {n(mean(bucket_ids_vod), digits=3)}") # weighted mean
-    print(f" invodlvement metric:  {1-n(mean(bucket_ids_vod) / (len_vod - 1), digits=3)}") # normalize
+    print(f" invodlvement metric:  ", end='')
+    print( 1-n(mean(bucket_ids_vod) / (len_vod - 1), digits=3) if len_vod > 1 else 'NaN') # normalize
 if get_verbose() >= 1: print(f"––––––––––––\n Zero reductions:     {f5.zero_reductions}")
 if get_verbose() >= 1:
     print(f"––––––––––––\n Non-Koszul Syzygies: {'None' if not f5.syzygies else ''}")
