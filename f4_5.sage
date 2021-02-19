@@ -174,7 +174,7 @@ class F5:
             self.syzygies = []
             self.zero_reductions = 0
             self.reductions = 0
-            self.dreg = 0
+            self.dreg = max([f.degree() for f in F])
 
     def phi(self, v):
         """
@@ -279,7 +279,6 @@ class F5:
         P = reduce(lambda x,y: x.union(y), [critical_pair(curr_idx, j, i, Gprev) for j in Gprev], set())
         while P:
             d = min(t.degree() for (t,_,_,_,_) in P)
-            self.dreg = max(self.dreg, d)
             Pd = [(t,k,u,l,v) for (t,k,u,l,v) in P if t.degree() == d]
             P = P.difference(Pd)
             if get_verbose() >= 0: print(f"Processing {len(Pd):>3} pairs of degree {d:>3}.", end=" ")
@@ -491,6 +490,7 @@ class F5:
                 assert phi(s_voo) == s, "Mismatching voo and poly."
                 assert sig_k == get_sig_from_voo(s_voo), "Mismatching sig and voo."
                 L.append( (sig_k, s, s_voo) )
+                self.dreg = max(self.dreg, s.degree())
                 add_rule(sig_k, len(L)-1)
                 if s != 0:
                     S += [len(L)-1]
