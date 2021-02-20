@@ -413,18 +413,17 @@ if get_verbose() >= 0:
     print(f"––––––––––––")
     print(f" is Gröbner basis:       {Ideal(gb).basis_is_groebner()}")
     print(f" degree of regularity:   {f5.dreg}")
+    print(f" macaulay bound:         {1 + sum([p.degree() - 1 for p in polys])}")
     print(f" highest degree in gb:   {max([b.degree() for b in gb])}")
-if get_verbose() >= 1:
+if get_verbose() >= 3:
     gb_builtin = Ideal(polys).groebner_basis()
     gb_in_gb_builtin = all([b in gb_builtin for b in gb])
     gb_builtin_in_gb = all([b in gb for b in gb_builtin])
+    if gb_in_gb_builtin and gb_builtin_in_gb: print(f"––––––––––––\n  \\o/ Correctly computed reduced GB! \\o/")
+if get_verbose() >= 3:
     gb_in_ideal_gb_builtin = all([b in Ideal(gb_builtin) for b in gb])
     gb_builtin_in_ideal_gb = all([b in Ideal(gb) for b in gb_builtin])
     span_same_ideal = Ideal(gb) == Ideal(gb_builtin)
-    print(f"––––––––––––")
-    if gb_in_gb_builtin and gb_builtin_in_gb:
-        print(f" \\o/ Correctly computed reduced GB! \\o/")
-if get_verbose() >= 2:
     print(f"––––––––––––")
     print(f"              len: {len(gb)}")
     print(f" len sage reduced: {len(gb_builtin)}")
@@ -441,6 +440,17 @@ if get_verbose() >= 2:
     print(f" GB_builtin\\GB:")
     [print(f"                      [?, ?] : {b}") for b in gb_builtin if not b in gb]
 if get_verbose() >= 2:
+    print(f"–––––––––––– More details about the VoO's.")
+    print(f" degree of regularity: {f5.dreg}")
+    print(f" voo degrees – signature – gb_elem lead term")
+    for voo, b in zip(voos, gb):
+        print(f"[", end="")
+        for v in voo:
+            print(f"{v.degree() if v.degree() >= 0 else '   ':>3}", end=" ")
+        print(f"]", end=" – ")
+        print(f5.get_sig_from_voo(voo), end=" – ")
+        print(b.lt())
+if get_verbose() >= 3:
     print(f"––––––––––––\n GB:\n{gb}")
     print(f"––––––––––––\n VoOs:\n{voos}")
     print(f"––––––––––––\n Products of Vectors of Origin and input F:")
@@ -452,8 +462,8 @@ assert all(same), "Some Vector of Origin is misbehaving…"
 vods = [] # vectors of destination – how to go from the g_i to the f_j.
 for p in polys:
     quotients, rem = polynomial_division(p, gb)
-    assert rem == 0, f"p is not in the ideal spanned by GB, or GB is not a Gröbner basis."
     vods += [vector(quotients)]
+    assert not rem, f"p is not in the ideal spanned by GB, or GB is not a Gröbner basis."
 assert matrix(vods) * vector(gb) == vector(polys), f"Some vector of destination is misbehaving…"
 if get_verbose() >= 1:
     len_voo = len(voos[0])
