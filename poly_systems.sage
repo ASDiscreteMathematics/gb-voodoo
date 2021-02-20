@@ -28,6 +28,13 @@ def polynomial_division(f, divisors):
     # assert f_original == sum([q * d for (q, d) in zip(quotients, divisors)]) + remainder
     return quotients, remainder
 
+def is_regular_sequence(poly_system):
+    if len(poly_system) <= 0: return True
+    if poly_system[0].is_unit() and len(poly_system) > 1: return False
+    for i in range(1, len(poly_system)):
+        if poly_system[i] in Ideal(poly_system[:i]): return False
+    return True
+
 f5  = F5() # or: FR5, F5C, F4F5
 
 R = PolynomialRing(GF(283), 'x', 12)
@@ -477,6 +484,8 @@ if get_verbose() >= 1:
     print(f"––––––––––––\n Non-Koszul Syzygies: {'None' if not f5.syzygies else ''}")
     for i in f5.syzygies:
         print(f"                      {f5.voo(i)}")
+if get_verbose() >= 2:
+    print(f"––––––––––––\n Is regular sequence: {is_regular_sequence(polys)}")
 with open("./voo_file.txt", 'w') as voo_file:
     for voo in voos:
         voo_file.write(f"{voo}\n")
