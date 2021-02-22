@@ -301,7 +301,7 @@ class F5:
 
         G_red = set()
         if get_verbose() >= 1: print(f"Regular-s-interreducing {len(Gcurr)} polynomials.")
-        if get_verbose() >= 2: print(f"Their signatures are: {[sig(k) for k in Gcurr]}")
+        if get_verbose() >= 3: print(f"Their signatures are: {[sig(k) for k in Gcurr]}")
         for k in Gcurr:
             if not poly(k): continue
             if sig(k) in [sig(j) for j in G_red]: continue
@@ -343,6 +343,7 @@ class F5:
                 if not p:
                     reduction_occured = True
                     Gcurr = [j for j in Gcurr if j != Gcurr[i]]
+                    if get_verbose() >= 1: print(f"Interreducing basis of length {len(Gcurr)}.")
                 elif p != poly(Gcurr[i]):
                     reduction_occured = True
                     L[Gcurr[i]] = ( get_sig_from_voo(v), p, v )
@@ -483,9 +484,8 @@ class F5:
                 assert sig(l) == get_sig_from_voo(voo(l)), f"Mismatching sig and voo: index {l}."
                 s = u*poly(k)-v*poly(l) # S-Polynomial
                 s_voo = u*voo(k)-v*voo(l)
-                if s != 0:
-                    s_voo /= s.lc() # normalize
-                    s /= s.lc()
+                if s:
+                    s, s_voo = s/s.lc(), s_voo/s.lc() # normalize
                 sig_k = u/u.lc() * sig(k)
                 assert phi(s_voo) == s, "Mismatching voo and poly."
                 assert sig_k == get_sig_from_voo(s_voo), "Mismatching sig and voo."
@@ -541,15 +541,15 @@ class F5:
             k, to_do = to_do[0], to_do[1:]
             assert phi(k) == poly(k), f"reduction: Mismatching voo and poly at index {k}."
             assert sig(k) == get_sig(k), f"reduction: Mismatching voo and sig at index {k}."
-            if get_verbose() >= 2: print(f"Processing {k} – {sig(k)}, {poly(k)}")
+            if get_verbose() >= 3: print(f"Processing {k} – {sig(k)}, {poly(k)}")
             h = poly(k).reduce(B)
             pol, voo_h = voo_reduce(k, B, B_voo)
             assert h == pol, f"\nBuggy behavior in 'voo_reduce'."
-            if get_verbose() >= 2 and h != poly(k): print(f"Reduced {poly(k)} to {h}")
+            if get_verbose() >= 3 and h != poly(k): print(f"Reduced {poly(k)} to {h}")
             L[k] = (sig(k), h, voo_h)
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
             completed = completed.union( newly_completed )
-            if get_verbose() >= 2 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
+            if get_verbose() >= 3 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
             to_do += redo
             to_do.sort(key=lambda x: sig(x))
         return completed
@@ -644,9 +644,8 @@ class F5:
         p = p - u*q
         p_voo = p_voo - u*q_voo
         self.reductions += 1
-        if p != 0:
-            p_voo /= p.lc()
-            p /= p.lc()
+        if p:
+            p, p_voo = p/p.lc(), p_voo/p.lc()
         sig_j = u/u.lc() * sig(j)
         # no need to add k to syzygies below: calling function “reduction” will redo k
         if sig_j < sig(k):
