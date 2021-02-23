@@ -143,6 +143,7 @@ NOTE:
 """
 
 from functools import cmp_to_key
+from time import process_time
 
 divides = lambda x,y: x.parent().monomial_divides(x,y)
 LCM = lambda f,g: f.parent().monomial_lcm(f,g)
@@ -175,6 +176,8 @@ class F5:
             self.zero_reductions = 0
             self.reductions = 0
             self.dreg = max([f.degree() for f in F])
+            self.time_gb = -1
+            self.time_rd = -1
 
     def phi(self, v):
         """
@@ -228,6 +231,7 @@ class F5:
         L = self.L
         R = self.R
         m = len(F)
+        self.time_gb = process_time()
 
         f = F[0]
         L[0] = (Signature(1, 0), f/f.lc(), unit_vec(R, 0, m)/f.lc())
@@ -245,8 +249,11 @@ class F5:
             for j in range(len(G)):
                 if poly(j) == 1: return [poly(j)], [voo(j)]
             if get_verbose() >= 1: print(f"Done with increment {i}. Is GB for <f_0, {'…, ' if i>1 else ''}f_{i}>: {Ideal([poly(l) for l in G]).basis_is_groebner()}")
+        self.time_gb = process_time() - self.time_gb
         if get_verbose() >= 0: print(f"Interreducing basis of length {len(G)}.")
+        self.time_rd = process_time()
         G = interreduce_basis(G)
+        self.time_rd = process_time() - self.time_rd
         assert sorted(set([poly(k) for k in G])) == sorted(set([poly(k).reduce([poly(j) for j in G if j != k]) for k in G])), f"Reduced too little."
         return [poly(l) for l in G], [voo(l) for l in G]
 

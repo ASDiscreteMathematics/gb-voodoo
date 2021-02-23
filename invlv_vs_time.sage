@@ -1,5 +1,4 @@
 import numpy as np
-from time import process_time
 from matplotlib import pyplot as plt
 
 load('f4_5.sage')
@@ -44,9 +43,8 @@ for num_polys_per_system in all_num_polys_per_system:
 
                 for _ in range(num_systems):
                     polys = [R.random_element(deg_polys, num_terms) for _ in range(num_polys_per_system)]
-                    f5_time = process_time()
                     _, voos = f5(polys, homogenize=False)
-                    times += [process_time() - f5_time]
+                    times += [f5.time_gb]
                     involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
 
                 # plot new data point
