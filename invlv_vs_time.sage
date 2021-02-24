@@ -29,21 +29,21 @@ for num_polys_per_system in all_num_polys_per_system:
         for ax in axs[-1]: # bottom annotation
             ax.set_xlabel("involvement")
         for ax in axs[:,0]: # left annotation
-            ax.set_ylabel("time [s]")
-        max_f5_time = 0
+            ax.set_ylabel("reductions")
+        max_f5_reds = 0
 
         for subplot_r, num_vars in enumerate(all_num_vars):
             for subplot_c, deg_polys in enumerate(all_deg_polys):
                 R = PolynomialRing(GF(field_size), 'x', num_vars)
-                times = []
+                reductions = []
                 involvements = []
                 ax = axs[subplot_r, subplot_c]
                 for _ in range(num_systems):
                     polys = [R.random_element(deg_polys, num_terms) for _ in range(num_polys_per_system)]
                     _, voos = f5(polys, homogenize=False)
-                    times += [f5.time_gb]
+                    reductions += [f5.reductions]
                     involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
-                max_f5_time = max(times + [max_f5_time])
-                ax.set_ylim( -bot_margin, max_f5_time + top_margin )
-                ax.plot(involvements, times, 'b.')
+                max_f5_reds = max(reductions + [max_f5_reds])
+                ax.set_ylim( -bot_margin, max_f5_reds + top_margin )
+                ax.plot(involvements, reductions, 'b.')
                 plt.savefig(f"invlv_plots/{title}.png", format="png", dpi=300, bbox_inches="tight")
