@@ -59,4 +59,7 @@ for num_polys_per_system in all_num_polys_per_system:
                 bounds = range(min(d_regs)-1, max(d_regs) + 1)
                 ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
                 ax_clrbar.set_label("d_reg", position=(1.1,0.5), verticalalignment='center', rotation=270)
+                tick_skip = len(bounds)//10 + 1
+                ax_clrbar.set_ticks([b - 0.5 for b in bounds[::tick_skip]])
+                ax_clrbar.set_ticklabels([b for b in bounds[1::tick_skip]])
                 plt.savefig(f"invlv_plots/{title}.png", format="png", dpi=300, bbox_inches="tight")
