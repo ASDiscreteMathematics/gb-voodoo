@@ -26,14 +26,13 @@ for num_polys_per_system in all_num_polys_per_system:
         title = f"field: {field_size} – system: {num_polys_per_system} polys, {num_terms} terms"
         plt.close()
         plt.title(title)
-        fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), sharex=True, sharey=False, squeeze=False, figsize=(15, 8))
-        axs[0,0].set_xlim( -left_margin, 1 + right_margin )
+        fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), sharex=False, sharey=False, squeeze=False, figsize=(15, 8))
         for ax, d in zip(axs[0], all_deg_polys): # top annotation
             ax.text(0.5, 1.1, f"degree {d}", transform=ax.transAxes, horizontalalignment='center')
         for ax, v in zip(axs[:,-1], all_num_vars): # right annotation
             ax.text(1.3, 0.5, f"{v} vars", transform=ax.transAxes, verticalalignment='center', rotation=270)
         for ax in axs[-1]: # bottom annotation
-            ax.set_xlabel("involvement")
+            ax.set_xlabel("non-zero coeffs")
         for ax in axs[:,0]: # left annotation
             ax.set_ylabel("reductions")
 
@@ -43,17 +42,20 @@ for num_polys_per_system in all_num_polys_per_system:
                 reductions = []
                 involvements = []
                 gb_sizes = []
+                num_non_zero_coeffs = []
                 ax = axs[subplot_r, subplot_c]
                 for _ in range(num_systems):
                     polys = [R.random_element(deg_polys, num_terms) for _ in range(num_polys_per_system)]
                     gb, voos = f5(polys, homogenize=False)
                     reductions += [f5.reductions]
                     involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
+                    num_non_zero_coeffs += [sum([len(v.coefficients()) for voo in voos for v in voo if v])] # all non-zero coefficients in transformation matrix
                     gb_sizes += [len(gb)]
                 ax.set_ylim( -bot_margin, max(reductions) + top_margin )
+                ax.set_xlim( -left_margin, max(num_non_zero_coeffs) + right_margin )
                 clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(gb_sizes) - min(gb_sizes) + 1) # interpolate colors…
                 clr_map = ListedColormap([clr_map((d - min(gb_sizes)) / (max(gb_sizes) - min(gb_sizes) + 1)) for d in range(min(gb_sizes), max(gb_sizes) + 1)]) # …then make discrete
-                sctr = ax.scatter(involvements, reductions, marker='.', color=[clr_map(d-min(gb_sizes)) for d in gb_sizes])
+                sctr = ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(gb_sizes)) for d in gb_sizes])
                 bounds = range(min(gb_sizes)-1, max(gb_sizes) + 1)
                 ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
                 ax_clrbar.set_label("len(gb)", position=(1.1,0.5), verticalalignment='center', rotation=270)
