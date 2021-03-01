@@ -43,22 +43,22 @@ for num_polys_per_system in all_num_polys_per_system:
                 R = PolynomialRing(GF(field_size), 'x', num_vars)
                 reductions = []
                 involvements = []
-                d_regs = []
+                gb_sizes = []
                 ax = axs[subplot_r, subplot_c]
                 for _ in range(num_systems):
                     polys = [R.random_element(deg_polys, num_terms) for _ in range(num_polys_per_system)]
-                    _, voos = f5(polys, homogenize=False)
+                    gb, voos = f5(polys, homogenize=False)
                     reductions += [f5.reductions]
                     involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
-                    d_regs += [f5.dreg]
+                    gb_sizes += [len(gb)]
                 max_f5_reds = max(reductions + [max_f5_reds])
                 ax.set_ylim( -bot_margin, max_f5_reds + top_margin )
-                clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(d_regs) - min(d_regs) + 1) # interpolate colors…
-                clr_map = ListedColormap([clr_map((d - min(d_regs)) / (max(d_regs) - min(d_regs) + 1)) for d in range(min(d_regs), max(d_regs) + 1)]) # …then make discrete
-                sctr = ax.scatter(involvements, reductions, marker='.', color=[clr_map(d-min(d_regs)) for d in d_regs])
-                bounds = range(min(d_regs)-1, max(d_regs) + 1)
+                clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(gb_sizes) - min(gb_sizes) + 1) # interpolate colors…
+                clr_map = ListedColormap([clr_map((d - min(gb_sizes)) / (max(gb_sizes) - min(gb_sizes) + 1)) for d in range(min(gb_sizes), max(gb_sizes) + 1)]) # …then make discrete
+                sctr = ax.scatter(involvements, reductions, marker='.', color=[clr_map(d-min(gb_sizes)) for d in gb_sizes])
+                bounds = range(min(gb_sizes)-1, max(gb_sizes) + 1)
                 ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
-                ax_clrbar.set_label("d_reg", position=(1.1,0.5), verticalalignment='center', rotation=270)
+                ax_clrbar.set_label("len(gb)", position=(1.1,0.5), verticalalignment='center', rotation=270)
                 tick_skip = len(bounds)//10 + 1
                 ax_clrbar.set_ticks([b - 0.5 for b in bounds[::tick_skip]])
                 ax_clrbar.set_ticklabels([b for b in bounds[1::tick_skip]])
