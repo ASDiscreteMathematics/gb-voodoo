@@ -26,7 +26,7 @@ for num_polys_per_system in all_num_polys_per_system:
         title = f"field: {field_size} – system: {num_polys_per_system} polys, {num_terms} terms"
         plt.close()
         plt.title(title)
-        fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), sharex=True, sharey=True, squeeze=False, figsize=(15, 8))
+        fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), sharex=True, sharey=False, squeeze=False, figsize=(15, 8))
         axs[0,0].set_xlim( -left_margin, 1 + right_margin )
         for ax, d in zip(axs[0], all_deg_polys): # top annotation
             ax.text(0.5, 1.1, f"degree {d}", transform=ax.transAxes, horizontalalignment='center')
@@ -36,7 +36,6 @@ for num_polys_per_system in all_num_polys_per_system:
             ax.set_xlabel("involvement")
         for ax in axs[:,0]: # left annotation
             ax.set_ylabel("reductions")
-        max_f5_reds = 0
 
         for subplot_r, num_vars in enumerate(all_num_vars):
             for subplot_c, deg_polys in enumerate(all_deg_polys):
@@ -51,8 +50,7 @@ for num_polys_per_system in all_num_polys_per_system:
                     reductions += [f5.reductions]
                     involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
                     gb_sizes += [len(gb)]
-                max_f5_reds = max(reductions + [max_f5_reds])
-                ax.set_ylim( -bot_margin, max_f5_reds + top_margin )
+                ax.set_ylim( -bot_margin, max(reductions) + top_margin )
                 clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(gb_sizes) - min(gb_sizes) + 1) # interpolate colors…
                 clr_map = ListedColormap([clr_map((d - min(gb_sizes)) / (max(gb_sizes) - min(gb_sizes) + 1)) for d in range(min(gb_sizes), max(gb_sizes) + 1)]) # …then make discrete
                 sctr = ax.scatter(involvements, reductions, marker='.', color=[clr_map(d-min(gb_sizes)) for d in gb_sizes])
