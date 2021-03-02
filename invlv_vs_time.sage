@@ -44,6 +44,8 @@ for num_terms in all_num_terms:
             for _ in range(num_systems // num_vars):
                 polys = [R.random_element(deg_polys, num_terms) for _ in range(num_vars)]
                 gb, voos = f5(polys, homogenize=False)
+                if Ideal(gb).dimension() != 0:
+                    continue
                 reductions += [f5.reductions]
                 involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
                 num_non_zero_coeffs += [sum([len(v.coefficients()) for voo in voos for v in voo if v])] # all non-zero coefficients in transformation matrix
