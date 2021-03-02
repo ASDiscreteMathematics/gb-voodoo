@@ -142,19 +142,10 @@ NOTE:
     comment out commands with "reduce".
 """
 
-from functools import cmp_to_key
 from time import process_time
 
 divides = lambda x,y: x.parent().monomial_divides(x,y)
 LCM = lambda f,g: f.parent().monomial_lcm(f,g)
-
-def compare_by_degree(f,g):
-    if f.total_degree() > g.total_degree():
-        return 1
-    elif f.total_degree() < g.total_degree():
-        return -1
-    else:
-        return -1 if f < g else ( 1 if f > g else 0 )
 
 def unit_vec(ring, i, length):
     assert i < length
@@ -168,7 +159,8 @@ class F5:
     """
     def __init__(self, F=None):
         if F:
-            self.F = F
+            F_and_perm = sorted(enumerate(F), key=lambda x: x[1])
+            self.F_perm, self.F = zip(*F_and_perm)
             self.R = F[0].parent()
             self.Rules = [[]]
             self.L = [0]
@@ -228,9 +220,11 @@ class F5:
         self.__init__(F)
 
         Rules = self.Rules
+        F = self.F
         L = self.L
         R = self.R
         m = len(F)
+
         self.time_gb = process_time()
 
         f = F[0]
@@ -248,7 +242,7 @@ class F5:
             G = incremental_basis(i, B, B_voo, G)
             for j in range(len(G)):
                 if poly(j) == 1: return [poly(j)], [voo(j)]
-            if get_verbose() >= 1: print(f"Done with increment {i}. Is GB for <f_0, {'…, ' if i>1 else ''}f_{i}>: {Ideal([poly(l) for l in G]).basis_is_groebner()}")
+            if get_verbose() >= 2: print(f"Done with increment {i}. Is GB for <f_0, {'…, ' if i>1 else ''}f_{i}>: {Ideal([poly(l) for l in G]).basis_is_groebner()}")
         self.time_gb = process_time() - self.time_gb
         if get_verbose() >= 0: print(f"Interreducing basis of length {len(G)}.")
         self.time_rd = process_time()

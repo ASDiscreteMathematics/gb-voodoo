@@ -426,11 +426,11 @@ if get_verbose() >= 3:
 if get_verbose() >= 1 and all(same): print(f"––––––––––––\n \\o/ VoOs are all good! \\o/")
 assert all(same), "Some Vector of Origin is misbehaving…"
 vods = [] # vectors of destination – how to go from the g_i to the f_j.
-for p in polys:
+for p in f5.F:
     quotients, rem = polynomial_division(p, gb)
     vods += [vector(quotients)]
     assert not rem, f"p is not in the ideal spanned by GB, or GB is not a Gröbner basis."
-assert matrix(vods) * vector(gb) == vector(polys), f"Some vector of destination is misbehaving…"
+assert matrix(vods) * vector(gb) == vector(f5.F), f"Some vector of destination is misbehaving…"
 if get_verbose() >= 1:
     len_voo = len(voos[0])
     invoolvement_buckets = [0] * len_voo
@@ -461,7 +461,7 @@ if get_verbose() >= 1:
     for i in f5.syzygies:
         print(f"                      {f5.voo(i)}")
 if get_verbose() >= 2:
-    print(f"––––––––––––\n Is regular sequence: {is_regular_sequence(polys)}")
+    print(f"––––––––––––\n Is regular sequence: {is_regular_sequence(f5.F)}")
 with open("./voo_file.txt", 'w') as voo_file:
     for voo in voos:
         voo_file.write(f"{voo}\n")
