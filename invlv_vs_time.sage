@@ -41,7 +41,7 @@ for num_terms in all_num_terms:
             gb_sizes = []
             num_non_zero_coeffs = []
             ax = axs[subplot_r, subplot_c]
-            for _ in range(num_systems):
+            for _ in range(num_systems // num_vars):
                 polys = [R.random_element(deg_polys, num_terms) for _ in range(num_vars)]
                 gb, voos = f5(polys, homogenize=False)
                 reductions += [f5.reductions]
