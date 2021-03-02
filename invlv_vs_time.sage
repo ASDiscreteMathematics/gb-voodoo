@@ -15,7 +15,6 @@ all_num_vars = [2, 4, 6]
 all_deg_polys = [2, 5, 7]
 
 # stuff for plotting
-top_margin, right_margin, bot_margin, left_margin = 1, 0.05, 1, 0.05
 clr_dict = {'red':   [(0.0,  0.0, 0.0), (0.5,  1.0, 1.0), (1.0,  1.0, 1.0)],
             'green': [(0.0,  0.0, 0.0), (0.33, 1.0, 1.0), (0.66, 1.0, 1.0), (1.0,  0.0, 0.0)],
             'blue':  [(0.0,  1.0, 1.0), (0.5,  0.0, 0.0), (1.0,  0.0, 0.0)],}
@@ -24,7 +23,7 @@ for num_terms in all_num_terms:
     title = f"field_{field_size}-polys_{num_terms}_terms"
     plt.close()
     plt.title(title)
-    fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), sharex=False, sharey=False, squeeze=False, figsize=(15, 8))
+    fig, axs = plt.subplots(nrows=len(all_num_vars), ncols=len(all_deg_polys), squeeze=False, figsize=(5*len(all_deg_polys), 3*len(all_num_vars)))
     for ax, d in zip(axs[0], all_deg_polys): # top annotation
         ax.text(0.5, 1.1, f"degree {d}", transform=ax.transAxes, horizontalalignment='center')
     for ax, v in zip(axs[:,-1], all_num_vars): # right annotation
@@ -49,14 +48,13 @@ for num_terms in all_num_terms:
                 involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
                 num_non_zero_coeffs += [sum([len(v.coefficients()) for voo in voos for v in voo if v])] # all non-zero coefficients in transformation matrix
                 gb_sizes += [len(gb)]
-            ax.set_ylim( -bot_margin, max(reductions) + top_margin )
-            ax.set_xlim( -left_margin, max(num_non_zero_coeffs) + right_margin )
-            clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(gb_sizes) - min(gb_sizes) + 1) # interpolate colors…
-            clr_map = ListedColormap([clr_map((d - min(gb_sizes)) / (max(gb_sizes) - min(gb_sizes) + 1)) for d in range(min(gb_sizes), max(gb_sizes) + 1)]) # …then make discrete
-            sctr = ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(gb_sizes)) for d in gb_sizes])
-            bounds = range(min(gb_sizes)-1, max(gb_sizes) + 1)
+            clr_plot, clr_name = num_non_zero_coeffs, "non-zero coeffs" # plug in whichever array to be dimension “color”
+            clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(clr_plot) - min(clr_plot) + 1) # interpolate colors…
+            clr_map = ListedColormap([clr_map((d - min(clr_plot)) / (max(clr_plot) - min(clr_plot) + 1)) for d in range(min(clr_plot), max(clr_plot) + 1)]) # …then make discrete
+            sctr = ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot])
+            bounds = range(min(clr_plot)-1, max(clr_plot) + 1)
             ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
-            ax_clrbar.set_label("len(gb)", position=(1.1,0.5), verticalalignment='center', rotation=270)
+            ax_clrbar.set_label(clr_name, position=(1.1,0.5), verticalalignment='center', rotation=270)
             tick_skip = len(bounds)//10 + 1
             ax_clrbar.set_ticks([b - 0.5 for b in bounds[::tick_skip]])
             ax_clrbar.set_ticklabels([b for b in bounds[1::tick_skip]])
