@@ -26,6 +26,12 @@ def polynomial_division(f, divisors):
     # assert f_original == sum([q * d for (q, d) in zip(quotients, divisors)]) + remainder
     return quotients, remainder
 
+def s_poly(f, g):
+    l = f.lm().lcm(g.lm())
+    factor_f = l // f.lt()
+    factor_g = l // g.lt()
+    return factor_f * f - factor_g * g
+
 def is_regular_sequence(poly_system):
     if len(poly_system) <= 0: return True
     if poly_system[0].is_unit() and len(poly_system) > 1: return False
