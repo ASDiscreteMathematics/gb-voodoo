@@ -55,7 +55,7 @@ for num_terms in all_num_terms:
             clr_plot, clr_name = num_non_zero_coeffs, "non-zero coeffs" # plug in whichever array to be dimension “color”
             clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(clr_plot) - min(clr_plot) + 1) # interpolate colors…
             clr_map = ListedColormap([clr_map((d - min(clr_plot)) / (max(clr_plot) - min(clr_plot) + 1)) for d in range(min(clr_plot), max(clr_plot) + 1)]) # …then make discrete
-            sctr = ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot])
+            sctr = ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot], edgecolors='black', linewidths=0.2)
             bounds = range(min(clr_plot)-1, max(clr_plot) + 1)
             ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
             ax_clrbar.set_label(clr_name, position=(1.1,0.5), verticalalignment='center', rotation=270)
