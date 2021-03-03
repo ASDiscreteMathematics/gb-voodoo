@@ -39,6 +39,7 @@ for num_terms in all_num_terms:
             reductions = []
             involvements = []
             gb_sizes = []
+            max_degs = []
             num_non_zero_coeffs = []
             ax = axs[subplot_r, subplot_c]
             for _ in range(num_systems // num_vars):
@@ -50,6 +51,7 @@ for num_terms in all_num_terms:
                 involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
                 num_non_zero_coeffs += [sum([len(v.coefficients()) for voo in voos for v in voo if v])] # all non-zero coefficients in transformation matrix
                 gb_sizes += [len(gb)]
+                max_degs += [max(p.degree() for p in gb)]
             clr_plot, clr_name = num_non_zero_coeffs, "non-zero coeffs" # plug in whichever array to be dimension “color”
             clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(clr_plot) - min(clr_plot) + 1) # interpolate colors…
             clr_map = ListedColormap([clr_map((d - min(clr_plot)) / (max(clr_plot) - min(clr_plot) + 1)) for d in range(min(clr_plot), max(clr_plot) + 1)]) # …then make discrete
