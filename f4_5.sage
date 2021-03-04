@@ -340,7 +340,6 @@ class F5:
                 B = [poly(j) for j in Gcurr if j != Gcurr[i]]
                 Bv = [voo(j) for j in Gcurr if j != Gcurr[i]]
                 p, v = voo_reduce(Gcurr[i], B, Bv)
-                assert poly(Gcurr[i]).reduce(B) == p, f" [!] Buggy behavior in 'voo_reduce'!"
                 if not p:
                     reduction_occured = True
                     Gcurr = [j for j in Gcurr if j != Gcurr[i]]
