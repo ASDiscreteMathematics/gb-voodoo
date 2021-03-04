@@ -585,6 +585,7 @@ class F5:
                         reduced = True
                         reduced_by_b = True
                 assert p_before_b.reduce([b]) == p, "voo_reduce: reduction of p by b seems wrong"
+        self.reductions += 1
         assert phi(v) == p, f"voo_reduce: Kept track of voo incorrectly."
         return p, v
 
