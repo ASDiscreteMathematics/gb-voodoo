@@ -490,7 +490,7 @@ class F5:
                 assert phi(s_voo) == s, "Mismatching voo and poly."
                 assert sig_k == get_sig_from_voo(s_voo), "Mismatching sig and voo."
                 L.append( (sig_k, s, s_voo) )
-                self.dreg = max(self.dreg, s.degree())
+                self.dreg = max(self.dreg, t.degree())
                 add_rule(sig_k, len(L)-1)
                 if s != 0:
                     S += [len(L)-1]
