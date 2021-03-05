@@ -29,9 +29,9 @@ for num_terms in all_num_terms:
     for ax, v in zip(axs[:,-1], all_num_vars): # right annotation
         ax.text(1.3, 0.5, f"{v} vars & polys", transform=ax.transAxes, verticalalignment='center', rotation=270)
     for ax in axs[-1]: # bottom annotation
-        ax.set_xlabel("non-zero coeffs in (working) basis")
+        ax.set_xlabel("reductions")
     for ax in axs[:,0]: # left annotation
-        ax.set_ylabel("reductions")
+        ax.set_ylabel("non-zero coeffs in (working) basis")
 
     for subplot_r, num_vars in enumerate(all_num_vars):
         for subplot_c, deg_polys in enumerate(all_deg_polys):
@@ -58,11 +58,10 @@ for num_terms in all_num_terms:
             clr_map = LinearSegmentedColormap('blue_orange', clr_dict, max(clr_plot) - min(clr_plot) + 1) # interpolate colors…
             clr_map = ListedColormap([clr_map((d - min(clr_plot)) / (max(clr_plot) - min(clr_plot) + 1)) for d in range(min(clr_plot), max(clr_plot) + 1)]) # …then make discrete
             for i in range(len(num_non_zero_coeffs_hist)):
-                xvals = num_non_zero_coeffs_hist[i]
-                yvals = range(reductions[i] + 1)
+                vals = num_non_zero_coeffs_hist[i]
                 c = [clr_map(d-min(clr_plot)) for d in clr_plot][i]
-                ax.plot(xvals, yvals, color=c, linewidth=0.2)
-            ax.scatter(num_non_zero_coeffs, reductions, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot], edgecolors='black', linewidths=0.2)
+                ax.plot(vals,  color=c, linewidth=0.2)
+            ax.scatter(reductions, num_non_zero_coeffs, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot], edgecolors='black', linewidths=0.2)
             bounds = range(min(clr_plot)-1, max(clr_plot) + 1)
             ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
             ax_clrbar.set_label(clr_name, position=(1.1,0.5), verticalalignment='center', rotation=270)
