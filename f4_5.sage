@@ -167,7 +167,7 @@ class F5:
             self.syzygies = []
             self.zero_reductions = 0
             self.reductions = 0
-            self.dreg = max([f.degree() for f in F])
+            self.dreg = 0
             self.num_voo_coeffs = [0]
             self.time_gb = -1
             self.time_rd = -1
