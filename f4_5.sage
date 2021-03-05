@@ -168,6 +168,7 @@ class F5:
             self.zero_reductions = 0
             self.reductions = 0
             self.dreg = max([f.degree() for f in F])
+            self.num_voo_coeffs = [0]
             self.time_gb = -1
             self.time_rd = -1
 
@@ -349,6 +350,7 @@ class F5:
                     L[Gcurr[i]] = ( get_sig_from_voo(v), p, v )
                 else:
                     i += 1
+                self.num_voo_coeffs += [ sum([len(v.coefficients()) for voo in [voo(i) for i in Gcurr] for v in voo if v]) ]
         return set(Gcurr)
 
     def regular_s_reduce(self, k, G):
@@ -545,6 +547,7 @@ class F5:
             h = poly(k).reduce(B)
             pol, voo_h = voo_reduce(k, B, B_voo)
             assert h == pol, f"\nBuggy behavior in 'voo_reduce'."
+            self.num_voo_coeffs += [ sum([len(v.coefficients()) for voo in [voo(i) for i in Gcurr.union(completed)] for v in voo if v]) ]
             if get_verbose() >= 3 and h != poly(k): print(f"Reduced {poly(k)} to {h}")
             L[k] = (sig(k), h, voo_h)
             newly_completed, redo = top_reduction(k, Gprev, Gcurr.union(completed))
@@ -552,6 +555,7 @@ class F5:
             if get_verbose() >= 3 and k in newly_completed: print(f"completed {k} lm {poly(k).lt()}")
             to_do += redo
             to_do.sort(key=lambda x: sig(x))
+            self.num_voo_coeffs += [ sum([len(v.coefficients()) for voo in [voo(i) for i in Gcurr.union(completed)] for v in voo if v]) ]
         return completed
 
     def voo_reduce(self, i, basis, basis_voo):
