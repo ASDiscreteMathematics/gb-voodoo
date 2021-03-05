@@ -625,6 +625,7 @@ class F5:
         phi = self.phi
         L = self.L
 
+        self.reductions += 1 # the attempt counts – count the attempts
         if poly(k) == 0:
             if get_verbose() >= 0: print(f"Reduction of {k} to zero.")
             self.zero_reductions += 1
@@ -644,7 +645,6 @@ class F5:
         u = p.lt()//q.lt()
         p = p - u*q
         p_voo = p_voo - u*q_voo
-        self.reductions += 1
         if p:
             p, p_voo = p/p.lc(), p_voo/p.lc()
         sig_j = u/u.lc() * sig(j)
