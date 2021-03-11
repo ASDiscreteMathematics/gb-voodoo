@@ -37,6 +37,8 @@ for num_terms in all_num_terms:
         for subplot_c, deg_polys in enumerate(all_deg_polys):
             R = PolynomialRing(GF(field_size), 'x', num_vars)
             reductions = []
+            reductions_to_gb = []
+            non_zero_coeffs_at_gb = []
             involvements = []
             gb_sizes = []
             max_degs = []
@@ -49,6 +51,8 @@ for num_terms in all_num_terms:
                 if Ideal(gb).dimension() != 0:
                     continue
                 reductions += [f5.reductions]
+                reductions_to_gb += [f5.reductions_to_gb]
+                non_zero_coeffs_at_gb += [f5.num_voo_coeffs[f5.reductions_to_gb]]
                 involvements += [mean([sum([1 for x in voo if x]) - 1 for voo in voos]) / (len(voos[0]) - 1)]
                 num_non_zero_coeffs_hist += [f5.num_voo_coeffs]
                 num_non_zero_coeffs += [sum([len(v.coefficients()) for voo in voos for v in voo if v])] # all non-zero coefficients in transformation matrix
@@ -62,6 +66,7 @@ for num_terms in all_num_terms:
                 c = [clr_map(d-min(clr_plot)) for d in clr_plot][i]
                 ax.plot(vals,  color=c, linewidth=0.2)
             ax.scatter(reductions, num_non_zero_coeffs, marker='.', color=[clr_map(d-min(clr_plot)) for d in clr_plot], edgecolors='black', linewidths=0.2)
+            ax.scatter(reductions_to_gb, non_zero_coeffs_at_gb, marker='x', s=7, color=[clr_map(d-min(clr_plot)) for d in clr_plot], edgecolors='black', linewidth=0.4)
             bounds = range(min(clr_plot)-1, max(clr_plot) + 1)
             ax_clrbar = plt.colorbar(cm.ScalarMappable(norm=None, cmap=clr_map), ax=ax, boundaries=bounds, drawedges=True, aspect=50)
             ax_clrbar.set_label(clr_name, position=(1.1,0.5), verticalalignment='center', rotation=270)

@@ -166,6 +166,7 @@ class F5:
             self.L = [0]
             self.syzygies = []
             self.zero_reductions = 0
+            self.reductions_to_gb = 0
             self.reductions = 0
             self.dreg = 0
             self.num_voo_coeffs = [0]
@@ -246,6 +247,7 @@ class F5:
             if get_verbose() >= 2: print(f"Done with increment {i}. Is GB for <f_0, {'…, ' if i>1 else ''}f_{i}>: {Ideal([poly(l) for l in G]).basis_is_groebner()}")
         self.time_gb = process_time() - self.time_gb
         if get_verbose() >= 0: print(f"Interreducing basis of length {len(G)}.")
+        self.reductions_to_gb = self.reductions
         self.time_rd = process_time()
         G = interreduce_basis(G)
         self.time_rd = process_time() - self.time_rd
