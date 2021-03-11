@@ -33,6 +33,7 @@ def s_poly(f, g):
     return factor_f * f - factor_g * g
 
 def is_regular_sequence(poly_system):
+    raise NotImplementedError("The following code is incorrect.")
     if len(poly_system) <= 0: return True
     if poly_system[0].is_unit() and len(poly_system) > 1: return False
     for i in range(1, len(poly_system)):
