@@ -43,9 +43,8 @@ for _ in range(100):
         gb1 = [gb0[0].parent()(g.strip()) for g in gb1[2:-2].split(',')]
         degs = [0] # current (2021-03-18) magma version is V2.25-8, but we need V2.25-9 for GroebneBasis to return all intermediate working degrees.
     gb2 = Ideal(polys).groebner_basis()
-    assert all([p in gb0 for p in gb1]) and all([p in gb1 for p in gb0]), f"Custom F5 differs from Magma"
-    assert all([p in gb0 for p in gb2]) and all([p in gb2 for p in gb0]), f"Custom F5 differs from Singular"
-    assert all([p in gb1 for p in gb2]) and all([p in gb2 for p in gb1]), f"Magma differs from Singular"
+    assert sorted(gb0) == sorted(gb1), f"Custom F5 differs from Magma"
+    assert sorted(gb0) == sorted(gb2), f"Custom F5 differs from Singular"
     I = Ideal(gb0)
     dreg_mx = max(p.degree() for p in gb0)
     dreg_sp = max_spoly_deg(gb0)
