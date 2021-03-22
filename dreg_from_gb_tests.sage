@@ -37,7 +37,7 @@ for _ in range(100):
     gb0, voos = f5(polys, homogenize=False)
     if magma_installed:
         gb1, degs = magma.GroebnerBasis(polys, Faugere=True, nvals=2)
-        gb1 = [g for g in gb1] # weird things happen in the sage-magma-interface
+        gb1 = [g.sage() for g in gb1] # convert from MagmaElement to sage object
     else:
         gb1 = magma_free(f'r<{str(gb0[0].parent().gens())[1:-1]}>:=PolynomialRing(GF({len(gb0[0].base_ring())}),{len(gb0[0].parent().gens())},"grevlex");GroebnerBasis({polys}:Faugere:=true)')
         gb1 = [gb0[0].parent()(g.strip()) for g in gb1[2:-2].split(',')]
