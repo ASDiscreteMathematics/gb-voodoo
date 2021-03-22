@@ -33,9 +33,11 @@ def s_poly(f, g):
     return factor_f * f - factor_g * g
 
 def is_regular_sequence(poly_system):
-    raise NotImplementedError("The following code is incorrect.")
-    if len(poly_system) <= 0: return True
-    if poly_system[0].is_unit() and len(poly_system) > 1: return False
+    if len(poly_system) <= 0: return True # "trivial system"
+    if poly_system[0].is_unit() and len(poly_system) > 1: return False # , "first poly spans ring"
+    ring = poly_system[0].parent()
     for i in range(1, len(poly_system)):
-        if poly_system[i] in Ideal(poly_system[:i]): return False
-    return True
+        quo_ring = ring.quo(Ideal(poly_system[:i]))
+        f = quo_ring(poly_system[i])
+        if magma.IsZeroDivisor(f).sage(): return False # , f"f_{i} is in R/<f_0{', …' if i>2 else ''}{f', f_{i-1}' if i>1 else ''}>"
+    return True # , "is regular sequence"
