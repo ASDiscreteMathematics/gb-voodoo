@@ -61,6 +61,7 @@ def buchberger_criterion(gb):
     return True
 
 def d_reg_mm(polys):
+    gb_red = interreduce(polys) # only relevant if polys is GB
     ring = polys[0].parent()
     d = max(p.degree() for p in polys)
     is_gb = buchberger_criterion(polys)
