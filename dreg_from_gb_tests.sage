@@ -1,4 +1,5 @@
-load('analyze.sage')
+load('f4_5.sage')
+load('common.sage')
 load('poly_systems.sage')
 load('dreg_macaulay_matrix.sage')
 from sage.rings.polynomial.hilbert import first_hilbert_series
