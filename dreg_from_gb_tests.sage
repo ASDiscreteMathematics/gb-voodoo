@@ -22,6 +22,7 @@ def max_lcm_deg(gb):
 
 set_verbose(-1)
 magma_installed = False
+homogenize = True
 f5 = F5()
 sys_gen = PolynomialSystem(101)
 eq_to_mx = vector([0]*9)
@@ -36,6 +37,10 @@ eq_to_hr = vector([0]*9)
 for _ in range(100):
     polys = sys_gen.random(num_vars=3, degree=3, terms=6)
     gb0, voos = f5(polys, homogenize=False)
+    if homogenize:
+        ring.<x,y,z,h> = sys_gen.field[]
+        polys = [ring(p).homogenize(h) for p in polys]
+    gb0, voos = f5(polys, homogenize=False) # We do our own homogenization
     if magma_installed:
         gb1, degs = magma.GroebnerBasis(polys, Faugere=True, nvals=2)
         gb1 = [g.sage() for g in gb1] # convert from MagmaElement to sage object
