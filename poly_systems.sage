@@ -102,11 +102,11 @@ class PolynomialSystem():
                  x[4]^20*x[0] + x[4]^10]
         return polys
 
-    def high_dreg(self, degree=7):
-        ring = PolynomialRing(self.field, self.var_name, 2, order=self.mon_order)
+    def high_dreg(self, degree=7, num_vars=2):
+        ring = PolynomialRing(self.field, self.var_name, num_vars, order=self.mon_order)
         x = ring.gens()
-        polys = [x[0]^degree + x[1],
-                 x[0]]
+        polys = [x[1]^degree + x[0]]
+        polys += x[1:]
         return polys
 
     def low_involv(self):
