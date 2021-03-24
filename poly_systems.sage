@@ -85,28 +85,47 @@ class PolynomialSystem():
                  x[2]^4*x[0]*x[1] + x[2]^2]
         return polys
 
-    def dreg_voo_diff_2(self):
-        ring = PolynomialRing(self.field, self.var_name, 2, order=self.mon_order)
+    def dreg_voo_diff_2(self, degree=10, num_vars=3, linear_transform=None):
+        ring = PolynomialRing(self.field, self.var_name, num_vars, order=self.mon_order)
         x = ring.gens()
-        polys = [x[0]^100*x[1] + 1,
-                 x[0]*x[1]^100]
+        polys = []
+        for i in range(num_vars):
+            exp = [1] * num_vars
+            exp[i] = degree
+            polys += [ring.monomial(*exp) + 1]
+        polys[-1] -= 1
+        if linear_transform:
+            y = linear_transform * vector(x)
+            polys = [p(*y) for p in polys]
         return polys
 
-    def dreg_voo_diff_extreme(self):
-        ring = PolynomialRing(self.field, self.var_name, 5, order=self.mon_order)
+    def dreg_voo_diff_3(self, degree=10, num_vars=3, linear_transform=None):
+        ring = PolynomialRing(self.field, self.var_name, num_vars, order=self.mon_order)
         x = ring.gens()
-        polys = [x[0]^20*x[1] + x[0]^10,
-                 x[1]^20*x[2] + x[1]^10,
-                 x[2]^20*x[3] + x[2]^10,
-                 x[3]^20*x[4] + x[3]^10,
-                 x[4]^20*x[0] + x[4]^10]
+        polys = [x[0]^degree*x[1] +1, x[0]*x[1]^degree]
+        polys += x[2:]
+        if linear_transform:
+            y = linear_transform * vector(x)
+            polys = [p(*y) for p in polys]
         return polys
 
-    def high_dreg(self, degree=7, num_vars=2):
+    def dreg_voo_diff_extreme(self, degree=20, num_vars=3):
+        ring = PolynomialRing(self.field, self.var_name, num_vars, order=self.mon_order)
+        x = ring.gens()
+        polys = []
+        for i in range(num_vars):
+            j = (i + 1) % num_vars
+            polys += [x[i]^degree*x[j] + x[i]^(degree//2)]
+        return polys
+
+    def high_dreg(self, degree=7, num_vars=2, linear_transform=None):
         ring = PolynomialRing(self.field, self.var_name, num_vars, order=self.mon_order)
         x = ring.gens()
         polys = [x[1]^degree + x[0]]
         polys += x[1:]
+        if linear_transform:
+            y = linear_transform * vector(x)
+            polys = [p(*y) for p in polys]
         return polys
 
     def low_involv(self):
