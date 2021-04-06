@@ -61,17 +61,18 @@ def buchberger_criterion(gb):
     return True
 
 def d_reg_mm(polys):
-    gb_red = interreduce(polys) # only relevant if polys is GB
     ring = polys[0].parent()
-    d = max(p.degree() for p in polys)
-    is_gb = buchberger_criterion(polys)
+    d = 0
+    is_gb = False
     while not is_gb:
         columns = vector(all_monoms_upto_deg(ring, d))
         mm = macaulay_matrix(polys, d)
         ge = gauss_elimination(mm)
         gb = [row * columns for row in ge]
         gb_red = interreduce(gb)
-        is_gb = buchberger_criterion(gb_red)
+        quos_rems = [polynomial_division(p, gb_red) for p in polys]
+        rems = [r for _, r in quos_rems]
+        is_gb = buchberger_criterion(gb_red) and not any(rems)
         if not is_gb: d += 1
     assert sorted(gb_red) == sorted(Ideal(polys).groebner_basis()),\
         f"We did not compute the reduced Gröbner basis"
