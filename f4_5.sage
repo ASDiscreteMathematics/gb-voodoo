@@ -168,7 +168,9 @@ class F5:
             self.zero_reductions = 0
             self.reductions_to_gb = 0
             self.reductions = 0
-            self.dreg = 0
+            self.dreg = -1
+            self.gb_degree = -1
+            self.macaulay_bound = -1
             self.num_voo_coeffs = [0]
             self.time_gb = -1
             self.time_rd = -1
@@ -252,7 +254,12 @@ class F5:
         G = interreduce_basis(G)
         self.time_rd = process_time() - self.time_rd
         assert sorted(set([poly(k) for k in G])) == sorted(set([poly(k).reduce([poly(j) for j in G if j != k]) for k in G])), f"Reduced too little."
-        return [poly(l) for l in G], [voo(l) for l in G]
+        gb = [poly(l) for l in G]
+        voos = [voo(l) for l in G]
+        self.macaulay_bound = 1 + sum([f.degree() - 1 for f in F])
+        self.gb_degree = max([g.degree() for g in gb])
+        self.dreg = max(self.dreg, self.gb_degree) # this is only relevant if passed poly system was a Gröbner basis already
+        return gb, voos
 
     def incremental_basis(self, i, B, B_voo, Gprev):
         """
