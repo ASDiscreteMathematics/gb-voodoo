@@ -194,7 +194,7 @@ class F5:
     def sig(self, i):
         return self.L[i][0]
 
-    def __call__(self, F, homogenize=True):
+    def __call__(self, F, homogenize=False):
         if isinstance(F, sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal):
             F = F.gens()
         if homogenize and not all(f.is_homogeneous() for f in F):
