@@ -77,12 +77,46 @@ class PolynomialSystem():
                  x[1]^3 - x[2]*x[3]^2 - x[3]^3]
         return polys
 
+    def gb_already(self):
+        ring = PolynomialRing(self.field, self.var_name, 6, order=self.mon_order)
+        x = ring.gens()
+        polys = [x[0]^7,
+                 x[1]^7,
+                 x[2]^7,
+                 # x[3]^7,
+                 # x[4]^7,
+                 # x[5]^7,
+                 ]
+        return polys
+
     def dreg_voo_diff(self):
         ring = PolynomialRing(self.field, self.var_name, 3, order=self.mon_order)
         x = ring.gens()
         polys = [x[0]^4*x[1]*x[2] + x[0]^2,
                  x[1]^4*x[2]*x[0] + x[1]^2 + 1,
                  x[2]^4*x[0]*x[1] + x[2]^2]
+        return polys
+
+    def dreg_voo_diff_stacked(self):
+        ring = PolynomialRing(self.field, self.var_name, 6, order=self.mon_order)
+        x = ring.gens()
+        polys = [x[0]^2*x[1]*x[2] + x[0],
+                 x[1]^2*x[2]*x[0] + x[1] + 1,
+                 x[2]^2*x[0]*x[1] + x[2],
+                 x[3]^2*x[4]*x[5] + x[3],
+                 x[4]^2*x[5]*x[3] + x[4] + 1,
+                 x[5]^2*x[3]*x[4] + x[5]]
+        return polys
+
+    def dreg_voo_diff_stacked_linked(self):
+        ring = PolynomialRing(self.field, self.var_name, 6, order=self.mon_order)
+        x = ring.gens()
+        polys = [x[0]^2*x[1]*x[2] + x[0],
+                 x[1]^2*x[2]*x[0] + x[1] + 1,
+                 x[2]^2*x[0]*x[1] + x[2],
+                 x[3]^2*x[4]*x[5] + x[3],
+                 x[4]^2*x[5]*x[3] + x[4] + 1,
+                 x[5]^4 + x[0]^4,]
         return polys
 
     def dreg_voo_diff_2(self, degree=10, num_vars=3, linear_transform=None):
@@ -136,9 +170,19 @@ class PolynomialSystem():
                  x[2]^6*x[3] + x[2]^3,
                  x[3]^6*x[2] + x[3]^3,
                  x[0]*x[2]]
-                 # x[4]^6*x[5] + x[4]^3,
-                 # x[5]^6*x[4] + x[5]^3,
-                 # x[2]*x[4],
+        return polys
+
+    def low_involv_2(self):
+        ring = PolynomialRing(self.field, self.var_name, 6, order=self.mon_order)
+        x = ring.gens()
+        polys = [x[0]^10*x[1] + x[0],
+                 x[1]^10*x[0] + x[1],
+                 x[2]^6*x[3] + x[2]^3,
+                 x[3]^6*x[2] + x[3]^3,
+                 x[0]*x[2],
+                 x[4]^6*x[5] + x[4]^3,
+                 x[5]^6*x[4] + x[5]^3,
+                 x[2]*x[4]]
         return polys
 
     def faugere_paper(self):
