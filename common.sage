@@ -51,3 +51,7 @@ def is_regular_sequence(poly_system, give_reason=False):
             return False
     if give_reason: return True, "is regular sequence"
     return True
+
+def is_regular_sequence_m2(poly_system, give_reason=False):
+    macaulay2('loadPackage "Depth"')
+    return macaulay2.isRegularSequence(poly_system).sage()
