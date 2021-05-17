@@ -1084,11 +1084,11 @@ class F4F5(F5C):
         if len(F) == 0:
             return F
         A,v = Sequence(F).coefficient_matrix()
-        self.zero_reductions += A.nrows()-A.rank()
-        if get_verbose() >= 1: print(f"{A.nrows():>4} x {A.ncols():>4}, {A.rank():>4}, {A.nrows()-A.rank():>4}")
         nrows, ncols = A.nrows(), A.ncols()
+        self.zero_reductions += nrows-A.rank()
+        if get_verbose() >= 1: print(f"{nrows:>4} x {ncols:>4}, {A.rank():>4}, {nrows-A.rank():>4}")
         for c in range(ncols):
-            for r in range(0,nrows):
+            for r in range(nrows):
                 if A[r,c] != 0:
                     if any(A[r,i] for i in range(c)):
                         continue
@@ -1096,7 +1096,7 @@ class F4F5(F5C):
                     A.rescale_row(r, a_inverse, c)
                     for i in range(r+1,nrows):
                         if A[i,c] != 0:
-                            if any(A[i,_] for _ in range(c)):
+                            if any(A[i,j] for j in range(c)):
                                 continue
                             minus_b = -A[i,c]
                             A.add_multiple_of_row(i, r, minus_b, c)
