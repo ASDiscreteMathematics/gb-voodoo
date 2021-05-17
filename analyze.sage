@@ -1,7 +1,7 @@
 load('f4_5.sage')
 load('common.sage')
 
-def print_gb_analytics(polys, verbosity=2, write_to_disk=True):
+def print_gb_analytics(polys, verbosity=2, write_to_disk=True, return_gb=False):
     f5 = F5() # or: FR5, F5C, F4F5
     gb, voos = f5(polys, homogenize=False)
 
@@ -103,3 +103,5 @@ def print_gb_analytics(polys, verbosity=2, write_to_disk=True):
         with open("./vod_file.txt", 'w') as vod_file:
             for vod in vods:
                 vod_file.write(f"{vod}\n")
+    if return_gb:
+        return gb
