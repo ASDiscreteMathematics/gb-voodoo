@@ -1,3 +1,5 @@
+from itertools import combinations
+
 def polynomial_division(f, divisors):
     f_original = f
     s = len(divisors)
@@ -55,3 +57,33 @@ def is_regular_sequence(poly_system, give_reason=False):
 def is_regular_sequence_m2(poly_system, give_reason=False):
     macaulay2('loadPackage "Depth"')
     return macaulay2.isRegularSequence(poly_system).sage()
+
+def hilbert_regularity(I):
+    '''
+    Compute the Hilbert regularity of R/I where R = I.ring() and I.dimension() <= 0.
+    This is done by iterating through all n-tuples of the Gröbner basis' leading monomials,
+    computing their lcm, then determining if that lcm is actually a corner of the staircase.
+    The corner that is the furthest from the origin determines the Hilbert regularity.
+    '''
+    if I.dimension() > 0:
+        raise NotImplementedError(f"Ideal must not be of positive dimension, but is {I.dimension()}.")
+    gens = I.ring().gens() # all variables
+    n = len(gens)
+    xyz = reduce(operator.mul, gens, 1)
+    gb_lm = [f.lm() for f in I.groebner_basis()]
+    I_lm = Ideal(gb_lm)
+    hil_reg = 0
+    for lms in combinations(gb_lm, n):
+        m = lcm(lms)
+        # are we considering a meaningful combination of lm's?
+        # i.e., does every variable make an appearance in m?
+        if len(m.degrees()) != n or not all(m.degrees()):
+            continue
+        m = m / xyz # 1 step towards origin along all axes
+        assert I.ring()(m) == m.numerator() # no negative exponents, please
+        m = I.ring()(m)
+        # are we in a corner of the staircase?
+        # i.e., not in the ideal, but moving 1 step along any axis, we end up in the ideal?
+        if not m in I_lm and all([v*m in I_lm for v in gens]):
+            hil_reg = max(hil_reg, m.degree())
+    return hil_reg

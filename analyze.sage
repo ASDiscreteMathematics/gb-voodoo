@@ -15,6 +15,7 @@ def print_gb_analytics(polys, verbosity=2, write_to_disk=True, return_gb=False):
         print(f"––––––––––––")
         print(f" is Gröbner basis:       {Ideal(gb).basis_is_groebner()}")
         print(f" degree of regularity:   {f5.dreg}")
+        print(f" Hilbert regularity:     {hilbert_regularity(Ideal(gb))}")
         print(f" macaulay bound:         {deg_macaulay}")
         print(f" highest degree in gb:   {deg_max}")
     if verbosity >= 3:
